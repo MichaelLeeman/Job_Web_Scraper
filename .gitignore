@@ -222,6 +222,9 @@ dmypy.json
 ### MicrosoftOffice ###
 *.tmp
 
+# Excel files
+*.xlsx
+
 # Excel temporary
 ~$*.xls*
 
