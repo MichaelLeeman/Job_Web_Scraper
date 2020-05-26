@@ -2,10 +2,10 @@
 A simple Python web-scraper and Excel program that extracts data from job websites and presents the data in an Excel Worksheet.
 
 ## Table Of Contents
-* [About](#About)
+* [About](#about)
 * [Technologies](#technologies)
-* [How To Setup](#how to setup)
-* [To Do List](#to do list)
+* [How To Setup](#how-to-setup)
+* [To Do List](#to-do-list)
 * [Sources](#sources)
 
 ## About
