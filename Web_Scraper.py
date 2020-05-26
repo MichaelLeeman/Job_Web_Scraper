@@ -44,7 +44,7 @@ extracted_companies = extract_company_name_from_result(soup)
 # Excel
 # -----------------------------------------------------------------------
 
-file_path = "Job Openings.xlsx"
+file_path = "Job_Openings.xlsx"
 book = Workbook()
 sheet1 = book.active
 
