@@ -44,40 +44,44 @@ extracted_companies = extract_company_name_from_result(soup)
 # Excel
 # -----------------------------------------------------------------------
 
-file_path = "Job_Openings.xlsx"
-book = Workbook()
-sheet1 = book.active
 
-sheet1["A1"] = "Job Openings"
-sheet1["B1"] = "Company"
-sheet1["A1"].font = Font(bold=True)  # May need to change this in future titles as it's repetitive
-sheet1["B1"].font = Font(bold=True)
+def setup_worksheet(worksheet):
+    title_names = ("Job Openings", "Company")
+    worksheet.append(title_names)
+
+    for cell in worksheet[1:1]:
+        cell.font = Font(bold=True)
+
+    add_jobs_to_xl(extracted_jobs, worksheet)
+    add_company_to_xl(extracted_companies, worksheet)
 
 
 # Adds each job title after the less entry in the "Job Openings" column.
-def add_jobs_to_xl(job_list):
+def add_jobs_to_xl(job_list, worksheet):
     for job in job_list:
-        job_row = sheet1.max_row + 1
+        job_row = worksheet.max_row + 1
         job_cell_coord = 'A' + str(job_row)
-        sheet1[job_cell_coord] = job
+        worksheet[job_cell_coord] = job
 
 
 # Adds each company name after the less entry in the "Company" column.
-def add_company_to_xl(company_list):
+def add_company_to_xl(company_list, worksheet):
     # This chunk finds the row where column B ends at.
     first_blank_row = 2
-    for row in range(2, sheet1.max_row):
-        if sheet1['B' + str(row)].value is not None:
+    for row in range(2, worksheet.max_row):
+        if worksheet['B' + str(row)].value is not None:
             first_blank_row += 1
 
     # Adds each of the company names to the cells just after the less entry in the "Company" column.
     i = 0
     new_last_row = first_blank_row + len(company_list)
     for row in range(first_blank_row, new_last_row):
-        sheet1.cell(row=row, column=2, value=company_list[i])
+        worksheet.cell(row=row, column=2, value=company_list[i])
         i += 1
 
 
-add_jobs_to_xl(extracted_jobs)
-add_company_to_xl(extracted_companies)
+file_path = "Job_Openings.xlsx"
+book = Workbook()
+sheet1 = book.active
+setup_worksheet(sheet1)
 book.save(file_path)
