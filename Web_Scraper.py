@@ -4,7 +4,7 @@
 
 import requests
 from openpyxl import Workbook
-from openpyxl.styles import Font
+from openpyxl.styles import Font, PatternFill
 from bs4 import BeautifulSoup
 
 # -----------------------------------------------------------------------
@@ -49,12 +49,26 @@ def setup_worksheet(worksheet):
     title_names = ("Job Openings", "Company")
     worksheet.append(title_names)
 
-    for cell in worksheet[1:1]:
-        cell.font = Font(bold=True)
+    for column_title in worksheet[1:1]:
+        column_title.font = Font(bold=True, color='FFFFFF')
+        column_title.fill = PatternFill(start_color="2196F3", fill_type="solid")
 
     add_jobs_to_xl(extracted_jobs, worksheet)
     add_company_to_xl(extracted_companies, worksheet)
 
+    # Autofits the columns by taking the length of the longest entry
+    for column_cell in worksheet.columns:
+        max_char_len = 0
+        for cell in column_cell:
+            if max_char_len < len(cell.value):
+                max_char_len = len(cell.value)
+        new_column_length = max_char_len * 0.87
+        worksheet.column_dimensions[column_cell[0].column_letter].width = new_column_length
+
+    # Colour every other row blue
+    for every_other_row in range(3, worksheet.max_row + 1, 2):
+        for cell in worksheet[every_other_row]:
+            cell.fill = PatternFill(start_color="BBDEFB", fill_type="solid")
 
 # Adds each job title after the less entry in the "Job Openings" column.
 def add_jobs_to_xl(job_list, worksheet):
@@ -66,13 +80,13 @@ def add_jobs_to_xl(job_list, worksheet):
 
 # Adds each company name after the less entry in the "Company" column.
 def add_company_to_xl(company_list, worksheet):
-    # This chunk finds the row where column B ends at.
+    # Finds the row where column B ends.
     first_blank_row = 2
     for row in range(2, worksheet.max_row):
-        if worksheet['B' + str(row)].value is not None:
+        if worksheet['B' + str(row)].value:
             first_blank_row += 1
 
-    # Adds each of the company names to the cells just after the less entry in the "Company" column.
+    # Adds each of the company names to the cells after the last entry of the column.
     i = 0
     new_last_row = first_blank_row + len(company_list)
     for row in range(first_blank_row, new_last_row):
