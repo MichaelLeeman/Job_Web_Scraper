@@ -26,7 +26,12 @@ def extract_job_details(soup):
             text_in_span = span.string
             company_name = text_in_span.strip().replace('\n', ' ').replace('\t', '').replace('at ', '').replace(
                 ' in London', '')   # Removes unwanted info in string. May need to improve this.
-        job_info.append((job_title, company_name))
+        for span in div.find_all(name="span", attrs={"class": "job-listing-category badge badge-pill badge-light"}):
+            job_type = span.string
+        for span in div.find_all(name="span", attrs={"style": "order: 2"}):
+            unformatted_date = span.string
+            date_posted = unformatted_date.strip()
+        job_info.append((job_title, company_name, job_type, date_posted))
     return job_info
 
 
@@ -38,7 +43,7 @@ extracted_jobs = extract_job_details(soup)
 
 
 def setup_worksheet(worksheet):
-    title_names = ("Job Openings", "Company")
+    title_names = ("Job Openings", "Company", "Job Type", "Date Posted")
     worksheet.append(title_names)
 
     # Stylise the titles
@@ -54,7 +59,7 @@ def setup_worksheet(worksheet):
         for cell in column_cell:
             if max_char_len < len(cell.value):
                 max_char_len = len(cell.value)
-        new_column_length = max_char_len * 0.87
+        new_column_length = max_char_len * 0.95
         worksheet.column_dimensions[column_cell[0].column_letter].width = new_column_length
 
     # Colours every other row blue
