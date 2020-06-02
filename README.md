@@ -5,7 +5,6 @@ A simple Python web-scraper and Excel program that extracts data from job websit
 * [About](#about)
 * [Technologies](#technologies)
 * [How To Setup](#how-to-setup)
-* [To Do List](#to-do-list)
 * [Sources](#sources)
 
 ## About
