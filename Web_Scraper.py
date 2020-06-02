@@ -2,6 +2,8 @@
 # So far, the program scraps job titles and company names using BeautifulSoup and adds the data to excel using
 # openpyxl.
 
+import time
+from selenium import webdriver
 import requests
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -15,10 +17,16 @@ URL = "https://workinstartups.com/job-board/jobs-in/london"
 page = requests.get(URL)
 soup = BeautifulSoup(page.text, "html.parser")
 
+driver = webdriver.Chrome('./chromedriver')
+driver.get("https://workinstartups.com/job-board/jobs-in/london")
+driver.find_element_by_link_text('Close').click()
+
+job_info = []
+keep_search_for_jobs = True
+last_date_to_check = "19-05-2020"
 
 # Extracts the job details from each job posting
 def extract_job_details(soup):
-    job_info = []
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         for a in div.find_all(name="a"):  # Job titles are the only elements with "a" tags in the posting.
             job_title = a["title"]
@@ -35,7 +43,33 @@ def extract_job_details(soup):
     return job_info
 
 
-extracted_jobs = extract_job_details(soup)
+# Goes to the next page
+def new_page():
+    driver.find_element_by_link_text('Next >').click()
+    current_page = requests.get(driver.current_url)
+    new_soup = BeautifulSoup(current_page.text, "html.parser")
+    return new_soup
+
+
+# Checks the posted date of the job. Return boolean for checking whether the jobs were recently posted.
+def last_posted_date(soup):
+    keep_searching = True
+    for span in soup.find_all(name="span", attrs={"style": "order: 2"}):
+        unformatted_date = span.string
+        date_posted = unformatted_date.strip()
+        if date_posted == last_date_to_check:
+            keep_searching = False
+            break
+    return keep_searching
+
+
+# Keeps searching for jobs until they are no longer more recent than "last_date_to_check"
+while keep_search_for_jobs:
+    extracted_jobs = extract_job_details(soup)
+    keep_search_for_jobs = last_posted_date(soup)
+    time.sleep(1)
+    soup = new_page()
+    time.sleep(1)
 
 # -----------------------------------------------------------------------
 # Excel

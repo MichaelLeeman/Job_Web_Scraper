@@ -5,6 +5,8 @@
 .LSOverride
 .idea
 venv
+.chromedriver
+chromedriver.log
 
 # Icon must end with two \r
 Icon
