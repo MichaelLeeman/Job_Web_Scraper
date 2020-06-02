@@ -9,13 +9,14 @@ A simple Python web-scraper and Excel program that extracts data from job websit
 * [Sources](#sources)
 
 ## About
-The purpose of this project is for me to learn how to web-scrape with Python. So far, this program web-scrapes from the job website workinstartups.com. It extracts data from job openings on the first page, including job titles and company names. The program then creates a new Excel worksheet in the project's directory, showing all of the job openings in a table.  
+The purpose of this project is for me to learn how to web-scrape with Python. So far, this program web-scrapes from the job website workinstartups.com. It extracts data from recent job openings on from multiple pages, including job titles and company names. The program then creates a new Excel worksheet in the project's directory, showing all of the job openings in a table.  
 
 ## Technologies
 Project was created with:
 * Python: 3.8
 * requests: 2.23.0
 * beautifulsoup4: 4.9.0
+* selenium: 3.141.0
 * openpyxl: 3.0.3
 
 ## How To Setup
@@ -38,18 +39,6 @@ $ python3 Web_Scraper.py
 $ open Job_Openings.xlsx
 ```
 Once you have done this, an Excel workbook should open up called "Job_Openings.xlsx". This Excel workbook can be located in the project's directory.
-
-## To Do List
-* Format the worksheet's table including resizing the columns, colouring the cells and adding a title to the table.
-* Scrape through more than one page of workinstartups.com.
-* Implement a better function for appending data to the end of the columns.
-* Extract more data including: 
-    * Type of job (full-time, part-time, freelance, etc.) 
-    * Date posted
-    * Salary
-* Web scrape other job boards:
-    * Angel
-    * Company website's career page
 
 ## Sources
 
