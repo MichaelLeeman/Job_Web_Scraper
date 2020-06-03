@@ -25,8 +25,10 @@ job_info = []
 keep_search_for_jobs = True
 last_date_to_check = "19-05-2020"
 
+
 # Extracts the job details from each job posting
 def extract_job_details(soup):
+    keep_searching = True
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         for a in div.find_all(name="a"):  # Job titles are the only elements with "a" tags in the posting.
             job_title = a["title"]
@@ -39,8 +41,22 @@ def extract_job_details(soup):
         for span in div.find_all(name="span", attrs={"style": "order: 2"}):
             unformatted_date = span.string
             date_posted = unformatted_date.strip()
-        job_info.append((job_title, company_name, job_type, date_posted))
-    return job_info
+
+        # Append recent jobs. Otherwise, stop searching when the jobs  are no longer recent.
+        if date_posted != last_date_to_check:
+            job_info.append((job_title, company_name, job_type, date_posted))
+        else:
+            keep_searching = False
+    return job_info, keep_searching
+
+
+# Checks whether a job is recent based on its posted date.
+def check_before_extract(job_post):
+    for span in job_post.find_all(name="span", attrs={"style": "order: 2"}):
+        unformatted_date = span.string
+        date_posted = unformatted_date.strip()
+        if date_posted == last_date_to_check:
+            return False
 
 
 # Goes to the next page
@@ -51,22 +67,9 @@ def new_page():
     return new_soup
 
 
-# Checks the posted date of the job. Return boolean for checking whether the jobs were recently posted.
-def last_posted_date(soup):
-    keep_searching = True
-    for span in soup.find_all(name="span", attrs={"style": "order: 2"}):
-        unformatted_date = span.string
-        date_posted = unformatted_date.strip()
-        if date_posted == last_date_to_check:
-            keep_searching = False
-            break
-    return keep_searching
-
-
 # Keeps searching for jobs until they are no longer more recent than "last_date_to_check"
 while keep_search_for_jobs:
-    extracted_jobs = extract_job_details(soup)
-    keep_search_for_jobs = last_posted_date(soup)
+    extracted_jobs, keep_search_for_jobs = extract_job_details(soup)
     time.sleep(1)
     soup = new_page()
     time.sleep(1)
