@@ -8,7 +8,9 @@ A simple Python web-scraper and Excel program that extracts data from job websit
 * [Sources](#sources)
 
 ## About
-The purpose of this project is for me to learn how to web-scrape with Python. So far, this program web-scrapes from the job website workinstartups.com. It extracts data from recent job openings on from multiple pages, including job titles and company names. The program then creates a new Excel worksheet in the project's directory, showing all of the job openings in a table.  
+The purpose of this project to learn how to web-scrape and write Excel worksheets using Python. 
+
+So far, this program web-scrapes from the job website workinstartups.com and extracts data from recent job openings from multiple pages. The program then creates a new Excel worksheet in the project's directory, showing all of the recent job openings in a table.  
 
 ## Technologies
 Project was created with:
@@ -32,15 +34,21 @@ $ source ./my_venv/bin/activate
 
 # Install dependencies
 $ pip3 install -r ./requirements.txt
+```
+Next, you need to install the [Chrome driver](https://sites.google.com/a/chromium.org/chromedriver/downloads) to allow Selenium to interface with Google Chrome. The chrome driver needs to be installed in the project's directory.
 
-# Run Python program and open Excel workbook
+Finally, you can run the program and open the Excel workbook by entering the following in the terminal:
+```buildoutcfg
+# Run Python program
 $ python3 Web_Scraper.py
+
+# open Excel workbook
 $ open Job_Openings.xlsx
 ```
-Once you have done this, an Excel workbook should open up called "Job_Openings.xlsx". This Excel workbook can be located in the project's directory.
+The workbook should be located in the project's directory with the name _Job_Openings.xlsx_.
 
 ## Sources
 
 This project was inspired by [Web Scraping Job Postings from Indeed](https://medium.com/@msalmon00/web-scraping-job-postings-from-indeed-96bd588dcb4b) article  by Michael Salmon, where snippets of code were modified. 
 
-The [Beautiful Soup Documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) and [OpenPyXl Documentation](https://openpyxl.readthedocs.io/en/stable/) were also used for this project.
+The [Beautiful Soup Documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [Selenium with Python](https://selenium-python.readthedocs.io/) and [OpenPyXl Documentation](https://openpyxl.readthedocs.io/en/stable/) were also used for this project.
