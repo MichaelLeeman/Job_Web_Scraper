@@ -23,13 +23,11 @@ driver.get("https://workinstartups.com/job-board/jobs-in/london")
 driver.find_element_by_link_text('Close').click()
 
 job_list = []
-extracted_jobs = []
-keep_search_for_jobs = True
-last_date_to_check = datetime.strptime("19-05-2020", "%d-%m-%Y")
+last_recent_date = datetime.strptime("04-06-2020", "%d-%m-%Y")
 
 
-# Extracts the job details from each job posting
-def extract_job_details(soup):
+# Extracts the job details from each job posting on the current page.
+def scrape_job_details(soup):
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         for a in div.find_all(name="a"):  # Job titles are the only elements with "a" tags in the posting.
             job_title = a["title"]
@@ -48,32 +46,36 @@ def extract_job_details(soup):
 
 # Checks whether the date posted of every job and removes it from the list if it's too old.
 # Returns a boolean to stop searching for jobs once they are old ones.
-def check_before_extract(job_post_list):
-    keep_searching = True
-    for job in job_post_list[:]:
+def remove_outdated_jobs(job_list, keep_searching):
+    for job in job_list[:]:
         job_datetime = datetime.strptime(job[3], "%d-%m-%Y")
-        if job_datetime < last_date_to_check:
-            job_post_list.remove(job)
+        if job_datetime < last_recent_date:
+            job_list.remove(job)
             keep_searching = False
-    return job_post_list, keep_searching
+    return job_list, keep_searching
 
 
 # Goes to the next page
-def new_page():
+def go_to_new_page():
     driver.find_element_by_link_text('Next >').click()
     current_page = requests.get(driver.current_url)
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     return new_soup
 
 
-# Keeps searching for jobs until they are older than than "last_date_to_check"
-while keep_search_for_jobs:
-    job_list = extract_job_details(soup)
-    extracted_jobs, keep_search_for_jobs = check_before_extract(job_list)
-    t.sleep(1)
-    soup = new_page()
-    t.sleep(1)
+# Keep adding the jobs from the page until they are older than than "last_recent_date"
+def search_for_jobs(current_soup, job_list):
+    keep_searching_for_jobs = True
+    while keep_searching_for_jobs:
+        job_list, keep_searching_for_jobs = remove_outdated_jobs(scrape_job_details(current_soup), keep_searching_for_jobs)
+        t.sleep(1)
+        current_soup = go_to_new_page()
+        t.sleep(1)
+    return job_list
 
+
+job_list = search_for_jobs(soup, job_list)
+driver.close()
 
 # -----------------------------------------------------------------------
 # Excel
@@ -89,7 +91,7 @@ def setup_worksheet(worksheet):
         column_title.font = Font(bold=True, color='FFFFFF')
         column_title.fill = PatternFill(start_color="2196F3", fill_type="solid")
 
-    append_job_to_xl(extracted_jobs, worksheet)
+    append_job_to_xl(job_list, worksheet)
 
     # Autofits the columns by taking the length of the longest entry
     for column_cell in worksheet.columns:
