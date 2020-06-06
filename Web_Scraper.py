@@ -2,12 +2,13 @@
 # So far, the program scraps job titles and company names using BeautifulSoup and adds the data to excel using
 # openpyxl.
 
-import time
+import time as t
 from selenium import webdriver
 import requests
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from bs4 import BeautifulSoup
+from datetime import *
 
 # -----------------------------------------------------------------------
 # Web Scraping
@@ -21,14 +22,14 @@ driver = webdriver.Chrome('./chromedriver')
 driver.get("https://workinstartups.com/job-board/jobs-in/london")
 driver.find_element_by_link_text('Close').click()
 
-job_info = []
+job_list = []
+extracted_jobs = []
 keep_search_for_jobs = True
-last_date_to_check = "19-05-2020"
+last_date_to_check = datetime.strptime("19-05-2020", "%d-%m-%Y")
 
 
 # Extracts the job details from each job posting
 def extract_job_details(soup):
-    keep_searching = True
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         for a in div.find_all(name="a"):  # Job titles are the only elements with "a" tags in the posting.
             job_title = a["title"]
@@ -41,22 +42,20 @@ def extract_job_details(soup):
         for span in div.find_all(name="span", attrs={"style": "order: 2"}):
             unformatted_date = span.string
             date_posted = unformatted_date.strip()
+        job_list.append((job_title, company_name, job_type, date_posted))
+    return job_list
 
-        # Append recent jobs. Otherwise, stop searching when the jobs  are no longer recent.
-        if date_posted != last_date_to_check:
-            job_info.append((job_title, company_name, job_type, date_posted))
-        else:
+
+# Checks whether the date posted of every job and removes it from the list if it's too old.
+# Returns a boolean to stop searching for jobs once they are old ones.
+def check_before_extract(job_post_list):
+    keep_searching = True
+    for job in job_post_list[:]:
+        job_datetime = datetime.strptime(job[3], "%d-%m-%Y")
+        if job_datetime < last_date_to_check:
+            job_post_list.remove(job)
             keep_searching = False
-    return job_info, keep_searching
-
-
-# Checks whether a job is recent based on its posted date.
-def check_before_extract(job_post):
-    for span in job_post.find_all(name="span", attrs={"style": "order: 2"}):
-        unformatted_date = span.string
-        date_posted = unformatted_date.strip()
-        if date_posted == last_date_to_check:
-            return False
+    return job_post_list, keep_searching
 
 
 # Goes to the next page
@@ -67,12 +66,14 @@ def new_page():
     return new_soup
 
 
-# Keeps searching for jobs until they are no longer more recent than "last_date_to_check"
+# Keeps searching for jobs until they are older than than "last_date_to_check"
 while keep_search_for_jobs:
-    extracted_jobs, keep_search_for_jobs = extract_job_details(soup)
-    time.sleep(1)
+    job_list = extract_job_details(soup)
+    extracted_jobs, keep_search_for_jobs = check_before_extract(job_list)
+    t.sleep(1)
     soup = new_page()
-    time.sleep(1)
+    t.sleep(1)
+
 
 # -----------------------------------------------------------------------
 # Excel
