@@ -23,23 +23,16 @@ driver.get("https://workinstartups.com/job-board/jobs-in/london")
 driver.find_element_by_link_text('Close').click()
 
 job_list = []
-last_recent_date = datetime.strptime("04-06-2020", "%d-%m-%Y")
+last_recent_date = datetime.strptime("19-05-2020", "%d-%m-%Y")
 
 
 # Extracts the job details from each job posting on the current page.
 def scrape_job_details(soup):
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
-        for a in div.find_all(name="a"):  # Job titles are the only elements with "a" tags in the posting.
-            job_title = a["title"]
-        for span in div.find_all(name="span", attrs={"style": "display: ruby-base-container"}):
-            text_in_span = span.string
-            company_name = text_in_span.strip().replace('\n', ' ').replace('\t', '').replace('at ', '').replace(
-                ' in London', '')   # Removes unwanted info in string. May need to improve this.
-        for span in div.find_all(name="span", attrs={"class": "job-listing-category badge badge-pill badge-light"}):
-            job_type = span.string
-        for span in div.find_all(name="span", attrs={"style": "order: 2"}):
-            unformatted_date = span.string
-            date_posted = unformatted_date.strip()
+        job_title = div.a["title"]
+        company_name = div.find(name="span", attrs={"style": "display: ruby-base-container"}).string.split(None, 2)[1]
+        job_type = div.find("span").string
+        date_posted = div.find("span", attrs={"style": "order: 2"}).string.strip()
         job_list.append((job_title, company_name, job_type, date_posted))
     return job_list
 
