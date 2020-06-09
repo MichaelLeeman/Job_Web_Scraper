@@ -8,7 +8,7 @@ import requests
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from bs4 import BeautifulSoup
-from datetime import *
+from datetime import datetime
 
 # -----------------------------------------------------------------------
 # Web Scraping
@@ -26,7 +26,7 @@ job_list = []
 last_recent_date = datetime.strptime("19-05-2020", "%d-%m-%Y")
 
 
-# Extracts the job details from each job posting on the current page.
+# Extracts the job details from each job posting on the current page
 def scrape_job_details(soup):
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         job_title = div.a["title"]
@@ -37,8 +37,8 @@ def scrape_job_details(soup):
     return job_list
 
 
-# Checks whether the date posted of every job and removes it from the list if it's too old.
-# Returns a boolean to stop searching for jobs once they are old ones.
+# Checks whether the date posted of every job and removes it from the list if it's too old
+# Returns a boolean to stop searching for jobs once they are old ones
 def remove_outdated_jobs(job_list, keep_searching):
     for job in job_list[:]:
         job_datetime = datetime.strptime(job[3], "%d-%m-%Y")
@@ -101,7 +101,7 @@ def setup_worksheet(worksheet):
             cell.fill = PatternFill(start_color="BBDEFB", fill_type="solid")
 
 
-# Appends each job opening to the worksheet.
+# Appends each job opening to the worksheet
 def append_job_to_xl(job_list, worksheet):
     for job in job_list:
         worksheet.append(job)
