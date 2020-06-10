@@ -8,6 +8,10 @@ venv
 chromedriver
 chromedriver.log
 
+!.gitkeep
+!.scripts
+!scripts
+
 # Icon must end with two \r
 Icon
 
