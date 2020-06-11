@@ -40,12 +40,12 @@ Next, you need to install the [Chrome driver](https://sites.google.com/a/chromiu
 Finally, you can run the program inside the app directory and open the Excel workbook by entering the following in the terminal:
 ```buildoutcfg
 # Run Python program
-$ python3 Web_Scraper.py
+$ python3 web_scraper.py
 
 # open Excel workbook
 $ open Job_Openings.xlsx
 ```
-The workbook should be located in the project's directory with the name _Job_Openings.xlsx_.
+The workbook should be located in the app directory with the name _Job_Openings.xlsx_.
 
 ## Sources
 
