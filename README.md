@@ -35,9 +35,9 @@ $ source ./my_venv/bin/activate
 # Install dependencies
 $ pip3 install -r ./requirements.txt
 ```
-Next, you need to install the [Chrome driver](https://sites.google.com/a/chromium.org/chromedriver/downloads) to allow Selenium to interface with Google Chrome. The chrome driver needs to be installed in the project's directory.
+Next, you need to install the [Chrome driver](https://sites.google.com/a/chromium.org/chromedriver/downloads) to allow Selenium to interface with Google Chrome. The chrome driver needs to be installed in the app's directory.
 
-Finally, you can run the program and open the Excel workbook by entering the following in the terminal:
+Finally, you can run the program inside the app directory and open the Excel workbook by entering the following in the terminal:
 ```buildoutcfg
 # Run Python program
 $ python3 Web_Scraper.py
