@@ -23,18 +23,21 @@ driver.get("https://workinstartups.com/job-board/jobs-in/london")
 driver.find_element_by_link_text('Close').click()
 
 job_list = []
+hyperlink_list = []
 last_recent_date = datetime.strptime("19-05-2020", "%d-%m-%Y")
 
 
-# Extracts the job details from each job posting on the current page
+# Extracts the job details and URL link from each job posting on the current page
 def scrape_job_details(soup):
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         job_title = div.a["title"]
         company_name = div.find(name="span", attrs={"style": "display: ruby-base-container"}).string.split(None, 2)[1]
         job_type = div.find("span").string
         date_posted = div.find("span", attrs={"style": "order: 2"}).string.strip()
+        URL_hyperlink = div.a["href"]
+        hyperlink_list.append(URL_hyperlink)
         job_list.append((job_title, company_name, job_type, date_posted))
-    return job_list
+    return job_list, hyperlink_list
 
 
 # Checks whether the date posted of every job and removes it from the list if it's too old
@@ -60,14 +63,15 @@ def go_to_new_page():
 def search_for_jobs(current_soup, job_list):
     keep_searching_for_jobs = True
     while keep_searching_for_jobs:
-        job_list, keep_searching_for_jobs = remove_outdated_jobs(scrape_job_details(current_soup), keep_searching_for_jobs)
+        uncompleted_job_list, URL_list = scrape_job_details(current_soup)
+        job_list, keep_searching_for_jobs = remove_outdated_jobs(uncompleted_job_list, keep_searching_for_jobs)
         t.sleep(1)
         current_soup = go_to_new_page()
         t.sleep(1)
-    return job_list
+    return job_list, URL_list
 
 
-job_list = search_for_jobs(soup, job_list)
+job_list, URL_list = search_for_jobs(soup, job_list)
 driver.close()
 
 # -----------------------------------------------------------------------
@@ -101,11 +105,14 @@ def setup_worksheet(worksheet):
             cell.fill = PatternFill(start_color="BBDEFB", fill_type="solid")
 
 
-# Appends each job opening to the worksheet
+# Appends each job opening to the worksheet and creates a hyperlink to its page
 def append_job_to_xl(job_list, worksheet):
+    URL_index = 0
     for job in job_list:
         worksheet.append(job)
-
+        current_row = worksheet._current_row
+        worksheet["A" + str(current_row)].hyperlink = URL_list[URL_index]
+        URL_index += 1
 
 file_path = "Job_Openings.xlsx"
 book = Workbook()
