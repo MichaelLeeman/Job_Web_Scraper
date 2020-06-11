@@ -6,7 +6,7 @@
 .idea
 
 # chrome driver
-chromedriver
+app/chromedriver
 chromedriver.log
 
 # Excel files
