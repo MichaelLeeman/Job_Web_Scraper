@@ -35,9 +35,25 @@ def scrape_job_details(soup):
         job_type = div.find("span").string
         date_posted = div.find("span", attrs={"style": "order: 2"}).string.strip()
         job_hyperlink = div.a["href"]
+
+        expiry_date = more_job_details(job_hyperlink)
+        print(expiry_date)
         hyperlink_list.append(job_hyperlink)
-        job_list.append((job_title, company_name, job_type, date_posted))
+        job_list.append((job_title, company_name, job_type, date_posted, expiry_date))
     return job_list, hyperlink_list
+
+
+# Scrapes for extra job details in the job's web page.
+def more_job_details(job_hyperlink):
+    driver.get(job_hyperlink)
+    current_page = requests.get(driver.current_url)
+    new_soup = BeautifulSoup(current_page.text, "html.parser")
+
+    date_list = new_soup.find("small").string.split()[8: 11]
+    separator = '-'
+    expiry_date = separator.join(date_list)
+    driver.back()
+    return expiry_date
 
 
 # Checks whether the date posted of every job and removes it from the list if it's too old
@@ -81,7 +97,7 @@ driver.close()
 
 
 def setup_worksheet(worksheet):
-    title_names = ("Job Openings", "Company", "Job Type", "Date Posted")
+    title_names = ("Job Openings", "Company", "Job Type", "Date Posted", "Deadline")
     worksheet.append(title_names)
 
     # Stylise the titles
