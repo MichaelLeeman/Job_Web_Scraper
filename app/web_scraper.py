@@ -39,10 +39,10 @@ def scrape_job_details(soup):
         unformatted_date = div.find("span", attrs={"style": "order: 2"}).string.strip()
         date_posted = datetime.strptime(unformatted_date, "%d-%m-%Y").strftime('%d-%b-%Y')
 
-        expiry_date = more_job_details(job_hyperlink)
+        expiry_date, salary_range = more_job_details(job_hyperlink)
 
         hyperlink_list.append(job_hyperlink)
-        job_list.append((job_title, company_name, job_type, date_posted, expiry_date))
+        job_list.append((job_title, company_name, job_type, date_posted, expiry_date, salary_range))
     return job_list, hyperlink_list
 
 
@@ -56,9 +56,17 @@ def more_job_details(job_hyperlink):
     date_text_into_list = new_soup.find("small").string.split()[8: 11]
     separator = '-'
     expiry_date = separator.join(date_text_into_list)   # Joining only the day, month and year back into a string
+
+    # Salary range is scraped from a list. If there is no job salary then assign "Not specified"
+    salary_contents = new_soup.find(attrs={"class": "mb-3 mb-sm-0"})
+    if salary_contents is not None:
+        salary_range = salary_contents.contents[1].strip()
+    else:
+        salary_range = "Not specified"
+
     driver.back()
     t.sleep(0.5)
-    return expiry_date
+    return expiry_date, salary_range
 
 
 # Checks the date posted of every job and removes it if it's too old
@@ -102,7 +110,7 @@ driver.close()
 
 
 def setup_worksheet(worksheet):
-    title_names = ("Job Openings", "Company", "Job Type", "Date Posted", "Deadline")
+    title_names = ("Job Openings", "Company", "Job Type", "Date Posted", "Deadline", "Salary Range")
     worksheet.append(title_names)
 
     # Stylise the titles
