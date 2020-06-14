@@ -8,7 +8,7 @@ import requests
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # -----------------------------------------------------------------------
 # Web Scraping
@@ -22,9 +22,10 @@ driver = webdriver.Chrome('./chromedriver')
 driver.get("https://workinstartups.com/job-board/jobs-in/london")
 driver.find_element_by_link_text('Close').click()
 
-job_list = []
-hyperlink_list = []
-last_recent_date = datetime.strptime("19-May-2020", "%d-%b-%Y")
+job_list, hyperlink_list = [], []
+current_date = datetime.today()
+date_fortnight_ago = current_date - timedelta(weeks=2)
+last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)    # default to midnight
 
 
 # Extracts the job details and hyperlink from each job posting on the current page
@@ -46,7 +47,7 @@ def scrape_job_details(soup):
     return job_list, hyperlink_list
 
 
-# Scrapes for extra job details found inside the job's web page.
+# Scrapes for extra job details found inside the job's description web page.
 def more_job_details(job_hyperlink):
     driver.get(job_hyperlink)
     current_page = requests.get(driver.current_url, allow_redirects=False)
@@ -124,7 +125,7 @@ def setup_worksheet(worksheet):
     for column_cell in worksheet.columns:
         max_char_len = 0
         for cell in column_cell:
-            if max_char_len < len(str(cell.value)):
+            if max_char_len < len(str(cell.value)):     # Datetime types need to become strings to measure len
                 max_char_len = len(str(cell.value))
         new_column_length = max_char_len
         worksheet.column_dimensions[column_cell[0].column_letter].width = new_column_length
