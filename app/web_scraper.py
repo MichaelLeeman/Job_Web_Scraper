@@ -49,7 +49,7 @@ def scrape_job_details(soup):
 # Scrapes for extra job details found inside the job's web page.
 def more_job_details(job_hyperlink):
     driver.get(job_hyperlink)
-    current_page = requests.get(driver.current_url)
+    current_page = requests.get(driver.current_url, allow_redirects=False)
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     t.sleep(0.5)
     # Deadline is written in a string text. To extract the date, the text is converted to a list.
