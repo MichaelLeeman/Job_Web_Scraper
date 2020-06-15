@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 # -----------------------------------------------------------------------
 
 URL = "https://workinstartups.com/job-board/jobs-in/london"
-page = requests.get(URL)
+page = requests.get(URL, headers={"User-Agent": "Chrome/83.0"})
 soup = BeautifulSoup(page.text, "html.parser")
 
 driver = webdriver.Chrome('./chromedriver')
@@ -24,6 +24,9 @@ driver.find_element_by_link_text('Close').click()
 
 job_list, hyperlink_list = [], []
 current_date = datetime.today()
+
+print(current_date, "\n\n\n")
+
 date_fortnight_ago = current_date - timedelta(weeks=2)
 last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)    # default to midnight
 
@@ -50,7 +53,7 @@ def scrape_job_details(soup):
 # Scrapes for extra job details found inside the job's description web page.
 def more_job_details(job_hyperlink):
     driver.get(job_hyperlink)
-    current_page = requests.get(driver.current_url, allow_redirects=False)
+    current_page = requests.get(driver.current_url , headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     t.sleep(0.5)
     # Deadline is written in a string text. To extract the date, the text is converted to a list.
@@ -60,11 +63,22 @@ def more_job_details(job_hyperlink):
 
     # Salary range is scraped from a list. If there is no job salary then assign "Not specified"
     salary_contents = new_soup.find(attrs={"class": "mb-3 mb-sm-0"})
+
     if salary_contents is not None:
         salary_range = salary_contents.contents[1].strip()
     else:
         salary_range = "Not specified"
+        # Unpaid and voluntary positions are only specified in the job description text
+        for job_description_element in new_soup.find_all(name="p"):
+            job_description_text = job_description_element.text.lower()
+            if "unpaid" in job_description_text:
+                salary_range = "Unpaid"
+            elif "voluntary" in job_description_text:
+                salary_range = "Unpaid"
+            elif "volunteer" in job_description_text:
+                salary_range = "Unpaid"
 
+    print(salary_range)
     driver.back()
     t.sleep(0.5)
     return expiry_date, salary_range
@@ -84,7 +98,7 @@ def remove_outdated_jobs(job_list, keep_searching):
 # Goes to the next page
 def go_to_new_page():
     driver.find_element_by_link_text('Next >').click()
-    current_page = requests.get(driver.current_url)
+    current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     return new_soup
 
