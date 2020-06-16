@@ -49,11 +49,16 @@ def scrape_job_details(soup):
 
 # Scrapes for extra job details found inside the job's description web page.
 def more_job_details(job_hyperlink):
+
+    # If there's a connection error then try again
     try:
         current_page = requests.get(job_hyperlink, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
         current_page.raise_for_status()
-    except requests.exceptions.HTTPError as err:
+    except requests.exceptions.ConnectionError as err:
         raise SystemExit(err)
+        print("Connection error. Trying again.")
+        t.sleep(1)
+        current_page = requests.get(job_hyperlink, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
 
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     t.sleep(0.5)
@@ -97,12 +102,16 @@ def remove_outdated_jobs(job_list, keep_searching):
 def go_to_new_page():
     driver.find_element_by_link_text('Next >').click()
 
+    # If there's a connection error then try again
     try:
         current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
         current_page.raise_for_status()
-    except requests.exceptions.HTTPError as err:
+    except requests.exceptions.ConnectionError as err:
         raise SystemExit(err)
-
+        print("Connection error. Trying again.")
+        t.sleep(1)
+        current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
+        
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     return new_soup
 
