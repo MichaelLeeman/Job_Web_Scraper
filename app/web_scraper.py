@@ -24,9 +24,6 @@ driver.find_element_by_link_text('Close').click()
 
 job_list, hyperlink_list = [], []
 current_date = datetime.today()
-
-print(current_date, "\n\n\n")
-
 date_fortnight_ago = current_date - timedelta(weeks=2)
 last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)    # default to midnight
 
@@ -52,10 +49,15 @@ def scrape_job_details(soup):
 
 # Scrapes for extra job details found inside the job's description web page.
 def more_job_details(job_hyperlink):
-    driver.get(job_hyperlink)
-    current_page = requests.get(driver.current_url , headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
+    try:
+        current_page = requests.get(job_hyperlink, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
+        current_page.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        raise SystemExit(err)
+
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     t.sleep(0.5)
+
     # Deadline is written in a string text. To extract the date, the text is converted to a list.
     date_text_into_list = new_soup.find("small").string.split()[8: 11]
     separator = '-'
@@ -77,10 +79,6 @@ def more_job_details(job_hyperlink):
                 salary_range = "Unpaid"
             elif "volunteer" in job_description_text:
                 salary_range = "Unpaid"
-
-    print(salary_range)
-    driver.back()
-    t.sleep(0.5)
     return expiry_date, salary_range
 
 
@@ -98,7 +96,13 @@ def remove_outdated_jobs(job_list, keep_searching):
 # Goes to the next page
 def go_to_new_page():
     driver.find_element_by_link_text('Next >').click()
-    current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
+
+    try:
+        current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
+        current_page.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        raise SystemExit(err)
+
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     return new_soup
 
