@@ -25,7 +25,7 @@ driver.find_element_by_link_text('Close').click()
 job_list, hyperlink_list = [], []
 current_date = datetime.today()
 date_fortnight_ago = current_date - timedelta(weeks=2)
-last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)    # default to midnight
+last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
 
 
 # Extracts the job details and hyperlink from each job posting on the current page
@@ -49,14 +49,11 @@ def scrape_job_details(soup):
 
 # Scrapes for extra job details found inside the job's description web page.
 def more_job_details(job_hyperlink):
-
     # If there's a connection error then try again
     try:
         current_page = requests.get(job_hyperlink, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
-        current_page.raise_for_status()
-    except requests.exceptions.ConnectionError as err:
-        raise SystemExit(err)
-        print("Connection error. Trying again.")
+    except requests.exceptions.ConnectionError:
+        print("Connection error while entering the job description page. Retrying the connection again.")
         t.sleep(1)
         current_page = requests.get(job_hyperlink, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
 
@@ -66,7 +63,7 @@ def more_job_details(job_hyperlink):
     # Deadline is written in a string text. To extract the date, the text is converted to a list.
     date_text_into_list = new_soup.find("small").string.split()[8: 11]
     separator = '-'
-    expiry_date = separator.join(date_text_into_list)   # Joining only the day, month and year back into a string
+    expiry_date = separator.join(date_text_into_list)  # Joining only the day, month and year back into a string
 
     # Salary range is scraped from a list. If there is no job salary then assign "Not specified"
     salary_contents = new_soup.find(attrs={"class": "mb-3 mb-sm-0"})
@@ -91,7 +88,7 @@ def more_job_details(job_hyperlink):
 # Returns a boolean to stop searching for jobs on the next pages
 def remove_outdated_jobs(job_list, keep_searching):
     for job in job_list[:]:
-        job_datetime = datetime.strptime(job[3], '%d-%b-%Y')    # Needs to convert back to datetime to make comparison
+        job_datetime = datetime.strptime(job[3], '%d-%b-%Y')  # Needs to convert back to datetime to make comparison
         if job_datetime < last_recent_date:
             job_list.remove(job)
             keep_searching = False
@@ -105,13 +102,11 @@ def go_to_new_page():
     # If there's a connection error then try again
     try:
         current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
-        current_page.raise_for_status()
-    except requests.exceptions.ConnectionError as err:
-        raise SystemExit(err)
-        print("Connection error. Trying again.")
+    except requests.exceptions.ConnectionError:
+        print("Connection error while going to the next page during the search. Retrying the connection again.")
         t.sleep(1)
         current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
-        
+
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     return new_soup
 
@@ -122,7 +117,6 @@ def search_for_jobs(current_soup):
     while keep_searching_for_jobs:
         unsorted_job_list, URL_list = scrape_job_details(current_soup)
         sorted_job_list, keep_searching_for_jobs = remove_outdated_jobs(unsorted_job_list, keep_searching_for_jobs)
-        t.sleep(0.5)
         current_soup = go_to_new_page()
         t.sleep(0.5)
     return sorted_job_list, URL_list
@@ -152,7 +146,7 @@ def setup_worksheet(worksheet):
     for column_cell in worksheet.columns:
         max_char_len = 0
         for cell in column_cell:
-            if max_char_len < len(str(cell.value)):     # Datetime types need to become strings to measure len
+            if max_char_len < len(str(cell.value)):  # Datetime types need to become strings to measure len
                 max_char_len = len(str(cell.value))
         new_column_length = max_char_len
         worksheet.column_dimensions[column_cell[0].column_letter].width = new_column_length
