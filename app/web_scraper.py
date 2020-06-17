@@ -28,6 +28,19 @@ date_fortnight_ago = current_date - timedelta(weeks=2)
 last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
 
 
+def soup_creator(URL_link):
+    # Retry connection if a connection error occurs.
+    try:
+        current_page = requests.get(URL_link, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
+    except requests.exceptions.ConnectionError:
+        print("Connection error. Retrying the connection again.")
+        t.sleep(1)
+        current_page = requests.get(URL_link, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
+    new_soup = BeautifulSoup(current_page.text, "html.parser")
+    t.sleep(0.5)
+    return new_soup
+
+
 # Extracts the job details and hyperlink from each job posting on the current page
 def scrape_job_details(soup):
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
@@ -49,16 +62,7 @@ def scrape_job_details(soup):
 
 # Scrapes for extra job details found inside the job's description web page.
 def more_job_details(job_hyperlink):
-    # If there's a connection error then try again
-    try:
-        current_page = requests.get(job_hyperlink, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
-    except requests.exceptions.ConnectionError:
-        print("Connection error while entering the job description page. Retrying the connection again.")
-        t.sleep(1)
-        current_page = requests.get(job_hyperlink, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
-
-    new_soup = BeautifulSoup(current_page.text, "html.parser")
-    t.sleep(0.5)
+    new_soup = soup_creator(job_hyperlink)
 
     # Deadline is written in a string text. To extract the date, the text is converted to a list.
     date_text_into_list = new_soup.find("small").string.split()[8: 11]
@@ -98,16 +102,7 @@ def remove_outdated_jobs(job_list, keep_searching):
 # Goes to the next page
 def go_to_new_page():
     driver.find_element_by_link_text('Next >').click()
-
-    # If there's a connection error then try again
-    try:
-        current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
-    except requests.exceptions.ConnectionError:
-        print("Connection error while going to the next page during the search. Retrying the connection again.")
-        t.sleep(1)
-        current_page = requests.get(driver.current_url, headers={"User-Agent": "Chrome/83.0"})
-
-    new_soup = BeautifulSoup(current_page.text, "html.parser")
+    new_soup = soup_creator(driver.current_url)
     return new_soup
 
 
