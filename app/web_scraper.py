@@ -14,22 +14,9 @@ from datetime import datetime, timedelta
 # Web Scraping
 # -----------------------------------------------------------------------
 
-URL = "https://workinstartups.com/job-board/jobs-in/london"
-page = requests.get(URL, headers={"User-Agent": "Chrome/83.0"})
-soup = BeautifulSoup(page.text, "html.parser")
-
-driver = webdriver.Chrome('./chromedriver')
-driver.get("https://workinstartups.com/job-board/jobs-in/london")
-driver.find_element_by_link_text('Close').click()
-
-job_list, hyperlink_list = [], []
-current_date = datetime.today()
-date_fortnight_ago = current_date - timedelta(weeks=2)
-last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
-
 
 # Makes the GET request to the URL links and creates a soup
-def soup_creator(URL_link, max_retry=3):
+def soup_creator(URL_link, max_retry=3, sleep_time=0.5):
     # Retry connection if a connection error occurs.
     current_page, request_worked, number_of_total_retries = None, False, 0
     while number_of_total_retries < max_retry and not request_worked:
@@ -37,15 +24,16 @@ def soup_creator(URL_link, max_retry=3):
             current_page = requests.get(URL_link, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
             request_worked = True
         except requests.exceptions.ConnectionError as err:
-            print("Connection error. Retrying the connection to the URL attempt number: " + str(number_of_total_retries+1))
+            print("Connection error to " + str(URL_link) + " has failed.")
+            print("Retrying the connection to the URL attempt number: " + str(number_of_total_retries+1))
             t.sleep((2 ** number_of_total_retries)-1)   # Sleep times [ 0.0s, 1.0s, 3.0s]
             number_of_total_retries += 1
             if number_of_total_retries >= max_retry:
                 raise err
     # Creating soup and waiting for elements to load
-    new_soup = BeautifulSoup(current_page.text, "html.parser")
-    t.sleep(0.5)
-    return new_soup
+    current_soup = BeautifulSoup(current_page.text, "html.parser")
+    t.sleep(sleep_time)
+    return current_soup
 
 
 # Extracts the job details and hyperlink from each job posting on the current page
@@ -96,6 +84,9 @@ def more_job_details(job_hyperlink):
 # Checks the date posted of every job and removes it if it's too old
 # Returns a boolean to stop searching for jobs on the next pages
 def remove_outdated_jobs(job_list, keep_searching):
+    current_date = datetime.today()
+    date_fortnight_ago = current_date - timedelta(weeks=2)
+    last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
     for job in job_list[:]:
         job_datetime = datetime.strptime(job[3], '%d-%b-%Y')  # Needs to convert back to datetime to make comparison
         if job_datetime < last_recent_date:
@@ -122,6 +113,14 @@ def search_for_jobs(current_soup):
     return sorted_job_list, URL_list
 
 
+URL = "https://workinstartups.com/job-board/jobs-in/london"
+soup = soup_creator(URL, max_retry=1, sleep_time=0)
+
+driver = webdriver.Chrome('./chromedriver')
+driver.get("https://workinstartups.com/job-board/jobs-in/london")
+driver.find_element_by_link_text('Close').click()
+
+job_list, hyperlink_list = [], []
 job_list, hyperlink_list = search_for_jobs(soup)
 driver.close()
 
