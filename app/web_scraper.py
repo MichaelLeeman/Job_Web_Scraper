@@ -28,14 +28,21 @@ date_fortnight_ago = current_date - timedelta(weeks=2)
 last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
 
 
-def soup_creator(URL_link):
+# Makes the GET request to the URL links and creates a soup
+def soup_creator(URL_link, max_retry=3):
     # Retry connection if a connection error occurs.
-    try:
-        current_page = requests.get(URL_link, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
-    except requests.exceptions.ConnectionError:
-        print("Connection error. Retrying the connection again.")
-        t.sleep(1)
-        current_page = requests.get(URL_link, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
+    current_page, request_worked, number_of_total_retries = None, False, 0
+    while number_of_total_retries < max_retry and not request_worked:
+        try:
+            current_page = requests.get(URL_link, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
+            request_worked = True
+        except requests.exceptions.ConnectionError as err:
+            print("Connection error. Retrying the connection to the URL attempt number: " + str(number_of_total_retries+1))
+            t.sleep((2 ** number_of_total_retries)-1)   # Sleep times [ 0.0s, 1.0s, 3.0s]
+            number_of_total_retries += 1
+            if number_of_total_retries >= max_retry:
+                raise err
+    # Creating soup and waiting for elements to load
     new_soup = BeautifulSoup(current_page.text, "html.parser")
     t.sleep(0.5)
     return new_soup
@@ -54,7 +61,6 @@ def scrape_job_details(soup):
         date_posted = datetime.strptime(unformatted_date, "%d-%m-%Y").strftime('%d-%b-%Y')
 
         expiry_date, salary_range = more_job_details(job_hyperlink)
-
         hyperlink_list.append(job_hyperlink)
         job_list.append((job_title, company_name, job_type, date_posted, expiry_date, salary_range))
     return job_list, hyperlink_list
@@ -63,7 +69,6 @@ def scrape_job_details(soup):
 # Scrapes for extra job details found inside the job's description web page.
 def more_job_details(job_hyperlink):
     new_soup = soup_creator(job_hyperlink)
-
     # Deadline is written in a string text. To extract the date, the text is converted to a list.
     date_text_into_list = new_soup.find("small").string.split()[8: 11]
     separator = '-'
