@@ -48,10 +48,11 @@ def scrape_job_details(soup):
         unformatted_date = div.find("span", attrs={"style": "order: 2"}).string.strip()
         date_posted = datetime.strptime(unformatted_date, "%d-%m-%Y").strftime('%d-%b-%Y')
 
-        expiry_date, salary_range = more_job_details(job_hyperlink)
+        expiry_date, salary_range, company_hyperlink = more_job_details(job_hyperlink)
         hyperlink_list.append(job_hyperlink)
+        company_link_list.append(company_hyperlink)
         job_list.append((job_title, company_name, job_type, date_posted, expiry_date, salary_range))
-    return job_list, hyperlink_list
+    return job_list, hyperlink_list, company_link_list
 
 
 # Scrapes for extra job details found inside the job's description web page.
@@ -68,17 +69,19 @@ def more_job_details(job_hyperlink):
     if salary_contents is not None:
         salary_range = salary_contents.contents[1].strip()
     else:
-        salary_range = "Not specified"
         # Unpaid and voluntary positions are only specified in the job description text
         for job_description_element in new_soup.find_all(name="p"):
             job_description_text = job_description_element.text.lower()
-            if "unpaid" in job_description_text:
+            if "unpaid" in job_description_text or "voluntary" in job_description_text or "volunteer" in job_description_text:
                 salary_range = "Unpaid"
-            elif "voluntary" in job_description_text:
-                salary_range = "Unpaid"
-            elif "volunteer" in job_description_text:
-                salary_range = "Unpaid"
-    return expiry_date, salary_range
+            elif "competitive salary" in job_description_text:
+                salary_range = "Competitive salary"
+            else:
+                salary_range = "Not specified"
+
+    company_link_element = new_soup.find(attrs={"class": "d-flex my-4 container"})
+    company_link = company_link_element.a["href"]
+    return expiry_date, salary_range, company_link
 
 
 # Checks the date posted of every job and removes it if it's too old
@@ -106,22 +109,22 @@ def go_to_new_page():
 def search_for_jobs(current_soup):
     keep_searching_for_jobs = True
     while keep_searching_for_jobs:
-        unsorted_job_list, URL_list = scrape_job_details(current_soup)
+        unsorted_job_list, URL_list, company_URL_list = scrape_job_details(current_soup)
         sorted_job_list, keep_searching_for_jobs = remove_outdated_jobs(unsorted_job_list, keep_searching_for_jobs)
         current_soup = go_to_new_page()
         t.sleep(0.5)
-    return sorted_job_list, URL_list
+    return sorted_job_list, URL_list, company_URL_list
 
 
 URL = "https://workinstartups.com/job-board/jobs-in/london"
 soup = soup_creator(URL, max_retry=1, sleep_time=0)
 
 driver = webdriver.Chrome('./chromedriver')
-driver.get("https://workinstartups.com/job-board/jobs-in/london")
+driver.get(URL)
 driver.find_element_by_link_text('Close').click()
 
-job_list, hyperlink_list = [], []
-job_list, hyperlink_list = search_for_jobs(soup)
+job_list, hyperlink_list, company_link_list = [], [], []
+job_list, hyperlink_list, company_link_list = search_for_jobs(soup)
 driver.close()
 
 
@@ -164,6 +167,7 @@ def append_job_to_xl(job_list, worksheet):
         current_row = worksheet._current_row
         # Adds a hyperlink to each job web page in the job title column
         worksheet["A" + str(current_row)].hyperlink = hyperlink_list[URL_index]
+        worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
         URL_index += 1
 
 
