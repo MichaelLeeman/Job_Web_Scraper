@@ -56,21 +56,38 @@ def scrape_job_details(soup):
         separator = '-'
         expiry_date = separator.join(date_text_into_list)  # Joining only the day, month and year back into a string
 
-        # Sometimes the salary range might be given in the salary icon, others specified in the text. If not then assign "Not specified".
+        # Sometimes the salary range might be given in the salary icon, others specified in the text. If not then assign "Unspecified salary".
         salary_contents = job_description_soup.find(attrs={"class": "mb-3 mb-sm-0"})
 
         if salary_contents is not None:
             # If salary is given in the icon then the salary range can be scraped from it like a list
             salary_range = salary_contents.contents[1].strip()
         else:
-            salary_range = "Not specified"
-            # Unpaid and voluntary positions are only specified in the job description text
+            salary_range = "Unspecified salary"
+            already_added = False
+            # Unpaid positions, commission only and other salary types are only specified in the job description text
             for p_element in job_description_soup.find_all(name="p"):
                 job_description_text = p_element.text.lower()
-                if "unpaid" in job_description_text or "voluntary" in job_description_text or "volunteer" in job_description_text:
+
+                if "unpaid" in job_description_text or "voluntary" in job_description_text or "volunteer" in job_description_text or "no salary" in job_description_text:
                     salary_range = "Unpaid"
+
                 elif "competitive salary" in job_description_text:
                     salary_range = "Competitive salary"
+
+                # Some jobs have commission with other salary types. Others have only commission.
+                if "commission" in job_description_text:
+                    if not already_added:
+                        salary_range += " + commission"
+                        already_added = True
+                    commission_texts = ["commission only", "commission-only", "only commission", "commission based"]
+                    for commission in commission_texts:
+                        if commission in job_description_text:
+                            salary_range = "Commission only"
+                            break
+
+                if "equity" in job_description_text and "private equity" not in job_description_text:
+                    salary_range += " + equity"
 
         # Scraping the hyperlink to the company's website
         company_hyperlink_element = job_description_soup.find(attrs={"class": "d-flex my-4 container"})
