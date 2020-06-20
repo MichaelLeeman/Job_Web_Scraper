@@ -93,6 +93,9 @@ def scrape_job_details(soup):
         company_hyperlink_element = job_description_soup.find(attrs={"class": "d-flex my-4 container"})
         company_hyperlink = company_hyperlink_element.a["href"]
 
+        if "https://workinstartups.com/" in company_hyperlink:
+            company_hyperlink = None
+
         hyperlink_list.append(job_hyperlink)
         company_link_list.append(company_hyperlink)
         job_list.append((job_title, company_name, job_type, date_posted, expiry_date, salary_range))
@@ -181,7 +184,8 @@ def append_job_to_xl(job_list, worksheet):
         current_row = worksheet._current_row
         # Adds a hyperlink to each job web page in the job title column
         worksheet["A" + str(current_row)].hyperlink = hyperlink_list[URL_index]
-        worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
+        if company_link_list[URL_index] is not None:
+            worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
         URL_index += 1
 
 
