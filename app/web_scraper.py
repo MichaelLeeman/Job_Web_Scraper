@@ -99,21 +99,27 @@ def scrape_job_details(soup):
         hyperlink_list.append(job_hyperlink)
         company_link_list.append(company_hyperlink)
         job_list.append((job_title, company_name, job_type, date_posted, expiry_date, salary_range))
+
     return job_list, hyperlink_list, company_link_list
 
 
-# Checks the date posted of every job and removes it if it's too old
-# Returns a boolean to stop searching for jobs on the next pages
-def remove_outdated_jobs(job_list, keep_searching):
-    current_date = datetime.today()
-    date_fortnight_ago = current_date - timedelta(weeks=2)
-    last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
+# Checks the posted date of the last job to see whether to keep searching for recently posted jobs.
+def check_date(job_list, last_date):
+    last_job_datetime = datetime.strptime(job_list[-1][3], '%d-%b-%Y')  # Needs to convert back to datetime to make comparison
+    if last_job_datetime < last_date:
+        keep_searching = False
+    else:
+        keep_searching = True
+    return keep_searching
+
+
+# Removes jobs from the list if they where posted kore than a fortnight ago
+def remove_outdated_jobs(job_list, last_date):
     for job in job_list[:]:
-        job_datetime = datetime.strptime(job[3], '%d-%b-%Y')  # Needs to convert back to datetime to make comparison
-        if job_datetime < last_recent_date:
+        job_datetime = datetime.strptime(job[3], '%d-%b-%Y')
+        if job_datetime < last_date:
             job_list.remove(job)
-            keep_searching = False
-    return job_list, keep_searching
+    return job_list
 
 
 # Goes to the next page
@@ -123,14 +129,14 @@ def go_to_new_page():
     return new_soup
 
 
-# Keep adding the jobs from the page until they are older than than "last_recent_date"
-def search_for_jobs(current_soup):
+# Keeps scraping for jobs on the current page while checking that they aren't older than a fortnight ago.
+def search_for_jobs(current_soup, last_date_to_check):
     keep_searching_for_jobs = True
     while keep_searching_for_jobs:
         unsorted_job_list, job_hyperlink_list, company_hyperlink_list = scrape_job_details(current_soup)
-        sorted_job_list, keep_searching_for_jobs = remove_outdated_jobs(unsorted_job_list, keep_searching_for_jobs)
+        keep_searching_for_jobs = check_date(job_list, last_date_to_check)
         current_soup = go_to_new_page()
-        t.sleep(0.5)
+    sorted_job_list = remove_outdated_jobs(job_list, last_date_to_check)
     return sorted_job_list, job_hyperlink_list, company_hyperlink_list
 
 
@@ -141,8 +147,12 @@ driver = webdriver.Chrome('./chromedriver')
 driver.get(URL)
 driver.find_element_by_link_text('Close').click()
 
+current_date = datetime.today()
+date_fortnight_ago = current_date - timedelta(weeks=2)
+last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
+
 job_list, hyperlink_list, company_link_list = [], [], []
-job_list, hyperlink_list, company_link_list = search_for_jobs(soup)
+job_list, hyperlink_list, company_link_list = search_for_jobs(soup, last_recent_date)
 driver.close()
 
 # -----------------------------------------------------------------------
