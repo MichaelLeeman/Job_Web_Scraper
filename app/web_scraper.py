@@ -63,8 +63,8 @@ def scrape_job_details(soup):
             # If salary is given in the icon then the salary range can be scraped from it like a list
             salary_range = salary_contents.contents[1].strip()
         else:
-            salary_range = "Unspecified salary"
-            already_added = False
+            salary_range, commission_already_added, equity_already_added = "Unspecified salary", False, False
+
             # Unpaid positions, commission only and other salary types are only specified in the job description text
             for p_element in job_description_soup.find_all(name="p"):
                 job_description_text = p_element.text.lower()
@@ -77,22 +77,24 @@ def scrape_job_details(soup):
 
                 # Some jobs have commission with other salary types. Others have only commission.
                 if "commission" in job_description_text:
-                    if not already_added:
+                    if not commission_already_added:
                         salary_range += " + commission"
-                        already_added = True
+                        commission_already_added = True
                     commission_texts = ["commission only", "commission-only", "only commission", "commission based"]
                     for commission in commission_texts:
                         if commission in job_description_text:
                             salary_range = "Commission only"
                             break
 
-                if "equity" in job_description_text and "private equity" not in job_description_text:
+                if "equity" in job_description_text and "private equity" not in job_description_text and not equity_already_added:
                     salary_range += " + equity"
+                    equity_already_added = True
 
         # Scraping the hyperlink to the company's website
         company_hyperlink_element = job_description_soup.find(attrs={"class": "d-flex my-4 container"})
         company_hyperlink = company_hyperlink_element.a["href"]
 
+        # Sometimes company URLs aren't given which means the next found element with attribute href is a link to another page
         if "https://workinstartups.com/" in company_hyperlink:
             company_hyperlink = None
 
