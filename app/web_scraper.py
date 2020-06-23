@@ -187,6 +187,11 @@ def setup_worksheet(worksheet):
         for cell in worksheet[every_other_row]:
             cell.fill = PatternFill(start_color="BBDEFB", fill_type="solid")
 
+    # Add filter and freeze pane
+    worksheet.auto_filter.ref = worksheet.dimensions
+    freeze_above = worksheet['A2']
+    worksheet.freeze_panes = freeze_above
+
 
 # Appends each job opening to the worksheet and creates a hyperlink to its page
 def append_job_to_xl(job_list, worksheet):
