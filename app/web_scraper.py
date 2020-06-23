@@ -1,15 +1,9 @@
-# This program scraps data from job postings on the website workinstartups.com and appends it to an excel worksheet.
-# So far, the program scraps job titles and company names using BeautifulSoup and adds the data to excel using
-# openpyxl.
+# This module makes requests to workinstartups.com and scrapes data from each job posting.
 
 import time as t
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-
-# -----------------------------------------------------------------------
-# Web Scraping
-# -----------------------------------------------------------------------
 
 
 # Makes the GET request to the URL links and creates a soup

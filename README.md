@@ -40,7 +40,7 @@ Next, you need to install [Chrome driver](https://sites.google.com/a/chromium.or
 Finally, you can run the program inside the app directory. Please note that the program takes approximately 15 minutes to run with stable internet connection. While the app is running, an automated Google Chrome browser that's controlled by Selenium should pop up. Afterwards, you can open the Excel workbook by entering the following in the terminal:
 ```buildoutcfg
 # Run Python program
-$ python3 web_scraper.py
+$ python3 main.py
 
 # open Excel workbook
 $ open Job_Openings.xlsx

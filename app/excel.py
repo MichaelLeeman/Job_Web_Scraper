@@ -1,8 +1,6 @@
-from openpyxl.styles import Font, PatternFill
+# This module setups the excel worksheet, stylise it and appends the job data
 
-# -----------------------------------------------------------------------
-# Excel
-# -----------------------------------------------------------------------
+from openpyxl.styles import Font, PatternFill
 
 
 def setup_worksheet(worksheet, job_list, hyperlink_list, company_link_list):

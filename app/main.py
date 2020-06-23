@@ -1,4 +1,5 @@
-import time as t
+# This program scraps data from job postings on the website workinstartups.com and appends it to an excel worksheet.
+
 from datetime import datetime, timedelta
 from selenium import webdriver
 from openpyxl import Workbook
