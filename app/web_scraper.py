@@ -3,12 +3,9 @@
 # openpyxl.
 
 import time as t
-from selenium import webdriver
 import requests
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # -----------------------------------------------------------------------
 # Web Scraping
@@ -37,7 +34,7 @@ def soup_creator(URL_link, max_retry=3, sleep_time=0.5):
 
 
 # Extracts the job details and hyperlink from each job posting on the current page
-def scrape_job_details(soup):
+def scrape_job_details(soup, job_list, hyperlink_list, company_link_list):
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         job_hyperlink = div.a["href"]
         job_title = div.a["title"]
@@ -125,89 +122,19 @@ def remove_outdated_jobs(job_list, last_date):
 
 
 # Goes to the next page
-def go_to_new_page():
+def go_to_new_page(driver):
     driver.find_element_by_link_text('Next >').click()
     new_soup = soup_creator(driver.current_url)
     return new_soup
 
 
 # Keeps scraping for jobs on the current page while checking that they aren't older than a fortnight ago.
-def search_for_jobs(current_soup, last_date_to_check):
+def search_for_jobs(current_soup, last_date_to_check, driver):
+    job_list, hyperlink_list, company_link_list = [], [], []
     keep_searching_for_jobs = True
     while keep_searching_for_jobs:
-        unsorted_job_list, job_hyperlink_list, company_hyperlink_list = scrape_job_details(current_soup)
+        unsorted_job_list, job_hyperlink_list, company_hyperlink_list = scrape_job_details(current_soup, job_list, hyperlink_list, company_link_list)
         keep_searching_for_jobs = check_date(job_list, last_date_to_check)
-        current_soup = go_to_new_page()
+        current_soup = go_to_new_page(driver)
     sorted_job_list = remove_outdated_jobs(job_list, last_date_to_check)
     return sorted_job_list, job_hyperlink_list, company_hyperlink_list
-
-
-URL = "https://workinstartups.com/job-board/jobs-in/london"
-soup = soup_creator(URL, max_retry=1, sleep_time=0)
-
-driver = webdriver.Chrome('./chromedriver')
-driver.get(URL)
-driver.find_element_by_link_text('Close').click()
-
-current_date = datetime.today()
-date_fortnight_ago = current_date - timedelta(weeks=2)
-last_recent_date = date_fortnight_ago.replace(hour=0, minute=0, second=0, microsecond=0)  # default to midnight
-
-job_list, hyperlink_list, company_link_list = [], [], []
-job_list, hyperlink_list, company_link_list = search_for_jobs(soup, last_recent_date)
-driver.close()
-
-# -----------------------------------------------------------------------
-# Excel
-# -----------------------------------------------------------------------
-
-
-def setup_worksheet(worksheet):
-    title_names = ("Job Openings", "Company", "Job Type", "Date Posted", "Deadline", "Salary Range")
-    worksheet.append(title_names)
-
-    # Stylise the titles
-    for column_title in worksheet[1:1]:
-        column_title.font = Font(bold=True, color='FFFFFF')
-        column_title.fill = PatternFill(start_color="2196F3", fill_type="solid")
-
-    append_job_to_xl(job_list, worksheet)
-
-    # Autofits the columns by taking the length of the longest entry
-    for column_cell in worksheet.columns:
-        max_char_len = 0
-        for cell in column_cell:
-            if max_char_len < len(str(cell.value)):  # Datetime types need to become strings to measure len
-                max_char_len = len(str(cell.value))
-        new_column_length = max_char_len
-        worksheet.column_dimensions[column_cell[0].column_letter].width = new_column_length
-
-    # Colours every other row light blue
-    for every_other_row in range(3, worksheet.max_row + 1, 2):
-        for cell in worksheet[every_other_row]:
-            cell.fill = PatternFill(start_color="BBDEFB", fill_type="solid")
-
-    # Add filter and freeze pane
-    worksheet.auto_filter.ref = worksheet.dimensions
-    freeze_above = worksheet['A2']
-    worksheet.freeze_panes = freeze_above
-
-
-# Appends each job opening to the worksheet and creates a hyperlink to its page
-def append_job_to_xl(job_list, worksheet):
-    URL_index = 0
-    for job in job_list:
-        worksheet.append(job)
-        current_row = worksheet._current_row
-        # Adds a hyperlink to each job web page in the job title column
-        worksheet["A" + str(current_row)].hyperlink = hyperlink_list[URL_index]
-        if company_link_list[URL_index] is not None:
-            worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
-        URL_index += 1
-
-
-file_path = "Job_Openings.xlsx"
-book = Workbook()
-sheet1 = book.active
-setup_worksheet(sheet1)
-book.save(file_path)
