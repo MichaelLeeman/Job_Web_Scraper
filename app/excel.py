@@ -19,7 +19,7 @@ def setup_worksheet(worksheet, job_list, hyperlink_list, company_link_list):
         max_char_len = 0
         for cell in column_cell:
             if max_char_len < len(str(cell.value)):  # Datetime types need to become strings to measure len
-                max_char_len = len(str(cell.value))
+                max_char_len = len(str(cell.value)) * 1.35
         new_column_length = max_char_len
         worksheet.column_dimensions[column_cell[0].column_letter].width = new_column_length
 
@@ -45,5 +45,3 @@ def append_job_to_xl(job_list, hyperlink_list, company_link_list, worksheet):
         if company_link_list[URL_index] is not None:
             worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
         URL_index += 1
-
-
