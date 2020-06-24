@@ -6,14 +6,14 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 
-# Makes the GET request to the URL links and creates a soup
-def soup_creator(URL_link, max_retry=3, sleep_time=0.5):
-    # Retry connection if a connection error occurs.
+# Makes a GET request to the URL and retries the connection if a connection error occurs.
+def get_request(URL_link, max_retry=3):
     current_page, request_worked, number_of_total_retries = None, False, 0
     while number_of_total_retries < max_retry and not request_worked:
         try:
             current_page = requests.get(URL_link, headers={"User-Agent": "Chrome/83.0"}, allow_redirects=False)
             request_worked = True
+            return current_page
         except requests.exceptions.ConnectionError as err:
             print("Connection error to " + str(URL_link) + " has failed.")
             print("Retrying the connection to the URL attempt number: " + str(number_of_total_retries+1))
@@ -21,7 +21,11 @@ def soup_creator(URL_link, max_retry=3, sleep_time=0.5):
             number_of_total_retries += 1
             if number_of_total_retries >= max_retry:
                 raise err
-    # Creating soup and waiting for elements to load
+
+
+# Creates a soup from the URL and waits for the  elements to load.
+def soup_creator(URL_link, max_retry=3, sleep_time=0.5):
+    current_page = get_request(URL_link, max_retry=3)
     current_soup = BeautifulSoup(current_page.text, "html.parser")
     t.sleep(sleep_time)
     return current_soup
