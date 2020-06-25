@@ -63,7 +63,8 @@ def scrape_job_post(div):
         for p_element in job_description_soup.find_all(name="p"):
             job_description_text = p_element.text.lower()
 
-            if "unpaid" in job_description_text or "voluntary" in job_description_text or "volunteer" in job_description_text or "no salary" in job_description_text:
+            unpaid_terms = ["unpaid", "voluntary", "volunteer", "no salary"]
+            if any(unpaid_term in job_description_text for unpaid_term in unpaid_terms):
                 salary_range = "Unpaid"
 
             elif "competitive salary" in job_description_text:
@@ -74,15 +75,20 @@ def scrape_job_post(div):
                 if not commission_already_added:
                     salary_range += " + commission"
                     commission_already_added = True
-                commission_texts = ["commission only", "commission-only", "only commission", "commission based"]
-                for commission in commission_texts:
-                    if commission in job_description_text:
-                        salary_range = "Commission only"
-                        break
+                commission_terms = ["commission only", "commission-only", "only commission", "commission based"]
+                if any(commission_term in job_description_text for commission_term in commission_terms):
+                    salary_range = "Unpaid"
+                    break
 
-            if "equity" in job_description_text and "private equity" not in job_description_text and not equity_already_added:
-                salary_range += " + equity"
-                equity_already_added = True
+            # Some jobs only provide equity, others have it on top of a salary.
+            if "equity" in job_description_text:
+                if not equity_already_added:
+                    salary_range += " + equity"
+                    equity_already_added = True
+                equity_terms = ["equity only", "equity-only", "only equity", "equity based"]
+                if any(equity_term in job_description_text for equity_term in equity_terms):
+                    salary_range = "Equity only"
+                    break
 
     # Scraping the hyperlink to the company's website
     company_hyperlink_element = job_description_soup.find(attrs={"class": "d-flex my-4 container"})
