@@ -41,11 +41,8 @@ Finally, you can run the program inside the app directory. Please note that the 
 ```buildoutcfg
 # Run Python program
 $ python3 main.py
-
-# open Excel workbook
-$ open Job_Openings.xlsx
 ```
-The workbook should be located in the app directory with the name _Job_Openings.xlsx_.
+Finally, the workbook should be located in the Workbooks directory with the name _Job_Openings.xlsx_.
 
 ## Sources
 
