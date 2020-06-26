@@ -1,15 +1,14 @@
 # This module setups the excel worksheet, stylise it and appends the job data
 
 from openpyxl.styles import Font, PatternFill
+from openpyxl import Workbook
 
 
+# setups the worksheet by appending the data and calling the other styling functions
 def setup_worksheet(worksheet, job_list, hyperlink_list, company_link_list, table_headers):
     worksheet.append(table_headers)
-
     create_table_headers(worksheet, font_colour="FFFFFF", cell_colour="2196F3")
-
     append_job_to_xl(job_list, hyperlink_list, company_link_list, worksheet)
-
     autofit_columns(worksheet)
     colour_rows(worksheet, colour="BBDEFB")
     filter_and_freeze_panes(worksheet)
@@ -59,3 +58,16 @@ def append_job_to_xl(job_list, hyperlink_list, company_link_list, worksheet):
         if company_link_list[URL_index] is not None:
             worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
         URL_index += 1
+
+
+# Initialise the workbook and worksheet
+def init_workbook(worksheet_title):
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = worksheet_title
+    return workbook, worksheet
+
+
+# Saves the workbook
+def save_workbook(workbook, file_path):
+    workbook.save(file_path)
