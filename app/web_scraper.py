@@ -74,6 +74,7 @@ def scrape_job_post(div):
             # sometimes the salary is given in the job description's text. These are found by searching for common characters.
             elif "£" in job_description_text:
                 salary_range = ""
+                # Find a word in the text that seems to resemble a salary range
                 for word in job_description_text.split():
                     if word.startswith("£"):
                         salary_range += word
@@ -97,6 +98,13 @@ def scrape_job_post(div):
                 elif salary_range.endswith(","):
                     index = salary_range.rfind(",")
                     salary_range = salary_range[:index]
+                # Adding spaces between the salary range
+                if "0-£" in salary_range:
+                    index = salary_range.find("0-£")
+                    salary_range = salary_range[:index] + "0 - £" + salary_range[index+3:]
+                # Adding "per year" at the end of salaries in thousands
+                if salary_range.endswith("000") or word.endswith("k"):
+                    salary_range += " per year"
 
             # Some jobs have commission with other salary types. Others have only commission.
             if "commission" in job_description_text:
@@ -127,7 +135,6 @@ def scrape_job_post(div):
         company_hyperlink = None
 
     job_details = (job_title, company_name, job_type, date_posted, expiry_date, salary_range)
-    print(job_title, salary_range + "\n", sep=": ")
     return job_details, job_hyperlink, company_hyperlink
 
 
