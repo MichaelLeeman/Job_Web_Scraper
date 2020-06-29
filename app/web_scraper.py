@@ -4,6 +4,7 @@ import time as t
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+import re
 
 
 # Makes a GET request to the URL and retries the connection if a connection error occurs.
@@ -57,9 +58,9 @@ def scrape_job_post(div):
         # If salary is given in the icon then the salary range can be scraped from it like a list
         salary_range = salary_contents.contents[1].strip()
     else:
+        # Unpaid positions, commission only and other salary types are only specified in the job description text
         salary_range, commission_already_added, equity_already_added = "Unspecified salary", False, False
 
-        # Unpaid positions, commission only and other salary types are only specified in the job description text
         for p_element in job_description_soup.find_all(name="p"):
             job_description_text = p_element.text.lower()
 
@@ -69,6 +70,33 @@ def scrape_job_post(div):
 
             elif "competitive salary" in job_description_text:
                 salary_range = "Competitive salary"
+
+            # sometimes the salary is given in the job description's text. These are found by searching for common characters.
+            elif "£" in job_description_text:
+                salary_range = ""
+                for word in job_description_text.split():
+                    if word.startswith("£"):
+                        salary_range += word
+                        # Formatting to remove unwanted characters or add wanted characters at the end
+                        if word.endswith(" "):
+                            salary_range[-1] = " - "
+                        elif word.endswith("0"):
+                            salary_range += " - "
+                        # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
+                        elif "m" in word or "b" in word:
+                            salary_range = "Unspecified salary"
+                    # Remove unwanted characters at the end of the string
+                    elif word.endswith("000"):
+                        salary_range += word
+                        if word.startswith(" ") or word.startswith("-"):
+                            salary_range[0] = ""
+                # Formatting by removing unwanted characters on the end of the string
+                if salary_range.endswith(" - "):
+                    index = salary_range.rfind(" - ")
+                    salary_range = salary_range[:index]
+                elif salary_range.endswith(","):
+                    index = salary_range.rfind(",")
+                    salary_range = salary_range[:index]
 
             # Some jobs have commission with other salary types. Others have only commission.
             if "commission" in job_description_text:
@@ -99,7 +127,7 @@ def scrape_job_post(div):
         company_hyperlink = None
 
     job_details = (job_title, company_name, job_type, date_posted, expiry_date, salary_range)
-
+    print(job_title, salary_range + "\n", sep=": ")
     return job_details, job_hyperlink, company_hyperlink
 
 
