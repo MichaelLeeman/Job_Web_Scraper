@@ -76,34 +76,27 @@ def scrape_job_post(div):
                 salary_range = ""
                 # Find a word in the text that seems to resemble a salary range
                 for word in job_description_text.split():
+                    word = word.strip('-').strip(",").strip(".")
                     if word.startswith("£"):
                         salary_range += word
                         # Formatting to remove unwanted characters or add wanted characters at the end
-                        if word.endswith(" "):
-                            salary_range[-1] = " - "
-                        elif word.endswith("0"):
+                        if word.endswith("0"):
                             salary_range += " - "
                         # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
                         elif "m" in word or "b" in word:
                             salary_range = "Unspecified salary"
-                    # Remove unwanted characters at the end of the string
+                    # Sometimes the upper range is separated from the lower range making it a new word. So add it.
                     elif word.endswith("000"):
                         salary_range += word
-                        if word.startswith(" ") or word.startswith("-"):
-                            salary_range[0] = ""
+
                 # Formatting by removing unwanted characters on the end of the string
-                if salary_range.endswith(" - "):
-                    index = salary_range.rfind(" - ")
-                    salary_range = salary_range[:index]
-                elif salary_range.endswith(","):
-                    index = salary_range.rfind(",")
-                    salary_range = salary_range[:index]
+                salary_range = salary_range.strip(" - ")
                 # Adding spaces between the salary range
                 if "0-£" in salary_range:
                     index = salary_range.find("0-£")
                     salary_range = salary_range[:index] + "0 - £" + salary_range[index+3:]
                 # Adding "per year" at the end of salaries in thousands
-                if salary_range.endswith("000") or word.endswith("k"):
+                if salary_range.endswith("000") or salary_range.endswith("k"):
                     salary_range += " per year"
 
             # Some jobs have commission with other salary types. Others have only commission.
