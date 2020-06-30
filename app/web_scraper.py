@@ -4,7 +4,6 @@ import time as t
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-import re
 
 
 # Makes a GET request to the URL and retries the connection if a connection error occurs.
@@ -68,38 +67,41 @@ def scrape_job_post(div):
             if any(unpaid_term in job_description_text for unpaid_term in unpaid_terms):
                 salary_range = "Unpaid"
 
-            elif "competitive salary" in job_description_text:
+            elif "competitive salary" in job_description_text or "appropriate salary" in job_description_text:
                 salary_range = "Competitive salary"
 
             # sometimes the salary is given in the job description's text. These are found by searching for common characters.
             elif "£" in job_description_text:
-                salary_range = ""
-                # Find a word in the text that seems to resemble a salary range
-                for word in job_description_text.split():
-                    word = word.strip('-').strip(",").strip(".")
-                    if word.startswith("£"):
-                        # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
-                        if "m" in word or "b" in word:
-                            salary_range = "Unspecified salary"
-                        else:
-                            # Reformat salaries written in "k" format into "000" format
-                            if "k" in word:
+                other_terms = ["Unpaid", "Competitive salary", "Equity only"]
+                if any(other_term in salary_range for other_term in other_terms):
+                    break
+                else:
+                    # Find a word in the text that seems to resemble a salary range
+                    for word in job_description_text.split():
+                        word = word.strip('-').strip(",").strip(".")
+                        if word.startswith("£"):
+                            # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
+                            unwanted_terms = ["b", "m", "s"]
+                            if any(unwanted_term in word for unwanted_term in unwanted_terms):
+                                salary_range = "Unspecified salary"
+                            else:
+                                # Reformat salaries written in "k" format into "000" format and add it to salary range
                                 word = word.replace("k", ",000")
-                            salary_range += word + " - "
-                            pass
-                    # Sometimes the upper range is separated from the lower range making it a new word. So add it.
-                    elif word.endswith("000"):
-                        salary_range += word
+                                salary_range = salary_range.replace("Unspecified salary", "")
+                                salary_range += word + " - "
+                        # Sometimes the upper range is separated from the lower range making it a new word. So add it.
+                        elif word.endswith("000"):
+                            salary_range += word
 
                 # Formatting by removing unwanted characters from the string and changing thousand separator to comma
-                salary_range = salary_range.strip(" - ").replace(".000", ",000")
+                salary_range = salary_range.strip(" - ").replace(".000", ",000").replace("/annual", " per year")
 
                 # Adding spaces between the salary range
                 if "0-" in salary_range:
                     index = salary_range.find("0-")
                     salary_range = salary_range[:index] + "0 - " + salary_range[index+2:]
                 # Adding "per year" at the end of salaries in thousands
-                if salary_range.endswith("000") or salary_range.endswith("k"):
+                if salary_range.endswith("000"):
                     salary_range += " per year"
 
             # Some jobs have commission with other salary types. Others have only commission.
