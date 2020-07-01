@@ -90,11 +90,12 @@ def scrape_job_post(div):
                                 salary_range = salary_range.replace("Unspecified salary", "")
                                 salary_range += word + " - "
                         # Sometimes the upper range is separated from the lower range making it a new word. So add it.
-                        elif word.endswith("000"):
+                        elif "000" in word:
                             salary_range += word
 
                 # Formatting by removing unwanted characters from the string and changing thousand separator to comma
-                salary_range = salary_range.strip(" - ").replace(".000", ",000").replace("/annual", " per year")
+                salary_range = salary_range.strip(" - ").replace(".000", ",000")
+                salary_range = salary_range.replace("/annual", " per year").replace("/month", " per month")
 
                 # Adding spaces between the salary range
                 if "0-" in salary_range:
@@ -103,6 +104,13 @@ def scrape_job_post(div):
                 # Adding "per year" at the end of salaries in thousands
                 if salary_range.endswith("000"):
                     salary_range += " per year"
+
+                # Reposition the salary add-ons in salary_range string to the correct order
+                if salary_range.startswith("+ commission"):
+                    salary_range = salary_range[12:] + " " + salary_range[:12]
+
+                if salary_range.startswith("+ equity"):
+                    salary_range = salary_range[8:] + " " + salary_range[:8]
 
             # Some jobs have commission with other salary types. Others have only commission.
             if "commission" in job_description_text:
