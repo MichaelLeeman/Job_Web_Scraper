@@ -16,8 +16,8 @@ def get_request(URL_link, max_retry=3):
             return current_page
         except requests.exceptions.ConnectionError as err:
             print("Connection error to " + str(URL_link) + " has failed.")
-            print("Retrying the connection to the URL attempt number: " + str(number_of_total_retries+1))
-            t.sleep((2 ** number_of_total_retries)-1)   # Sleep times [ 0.0s, 1.0s, 3.0s]
+            print("Retrying the connection to the URL attempt number: " + str(number_of_total_retries + 1))
+            t.sleep((2 ** number_of_total_retries) - 1)  # Sleep times [ 0.0s, 1.0s, 3.0s]
             number_of_total_retries += 1
             if number_of_total_retries >= max_retry:
                 raise err
@@ -57,14 +57,13 @@ def scrape_job_post(div):
         # If salary is given in the icon then the salary range can be scraped from it like a list
         salary_range = salary_contents.contents[1].strip()
     else:
-        # Unpaid positions, commission only and other salary types are only specified in the job description text
         salary_range, commission_already_added, equity_already_added = "Unspecified salary", False, False
 
         for p_element in job_description_soup.find_all(name="p"):
             job_description_text = p_element.text.lower()
 
-            unpaid_terms = ["unpaid", "voluntary", "volunteer", "no salary"]
-            if any(unpaid_term in job_description_text for unpaid_term in unpaid_terms):
+            # Unpaid positions, commission only and other salary types are only specified in the job description text
+            if any(unpaid_term in job_description_text for unpaid_term in ("unpaid", "voluntary", "volunteer", "no salary")):
                 salary_range = "Unpaid"
 
             elif "competitive salary" in job_description_text or "appropriate salary" in job_description_text:
@@ -72,8 +71,7 @@ def scrape_job_post(div):
 
             # sometimes the salary is given in the job description's text. These are found by searching for common characters.
             elif "£" in job_description_text:
-                other_terms = ["Unpaid", "Competitive salary", "Equity only"]
-                if any(other_term in salary_range for other_term in other_terms):
+                if any(other_term in salary_range for other_term in ("Unpaid", "Competitive salary", "Equity only")):
                     break
                 else:
                     # Find a word in the text that seems to resemble a salary range
@@ -81,8 +79,7 @@ def scrape_job_post(div):
                         word = word.strip('-').strip(",").strip(".")
                         if word.startswith("£"):
                             # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
-                            unwanted_terms = ["b", "m", "s"]
-                            if any(unwanted_term in word for unwanted_term in unwanted_terms):
+                            if any(unwanted_term in word for unwanted_term in ("b", "m", "s")):
                                 salary_range = "Unspecified salary"
                             else:
                                 # Reformat salaries written in "k" format into "000" format and add it to salary range
@@ -93,33 +90,35 @@ def scrape_job_post(div):
                         elif "000" in word:
                             salary_range += word
 
-                # Formatting by removing unwanted characters from the string and changing thousand separator to comma
-                salary_range = salary_range.strip(" - ").replace(".000", ",000")
-                salary_range = salary_range.replace("/annual", " per year").replace("/month", " per month")
+                    # Formatting by removing unwanted characters from the string and changing thousand separator to comma
+                    salary_range = salary_range.strip(" - ").replace(".000", ",000")
+                    salary_range = salary_range.replace("/annual", " per year").replace("/month", " per month")
 
-                # Adding spaces between the salary range
-                if "0-" in salary_range:
-                    index = salary_range.find("0-")
-                    salary_range = salary_range[:index] + "0 - " + salary_range[index+2:]
-                # Adding "per year" at the end of salaries in thousands
-                if salary_range.endswith("000"):
-                    salary_range += " per year"
+                    # Adding spaces between the salary range
+                    if "0-" in salary_range:
+                        index = salary_range.find("0-")
+                        salary_range = salary_range[:index] + "0 - " + salary_range[index + 2:]
 
-                # Reposition the salary add-ons in salary_range string to the correct order
-                if salary_range.startswith("+ commission"):
-                    salary_range = salary_range[12:] + " " + salary_range[:12]
+                    # Adding "per year" at the end of salaries in thousands
+                    if salary_range.endswith("000"):
+                        salary_range += " per year"
 
-                if salary_range.startswith("+ equity"):
-                    salary_range = salary_range[8:] + " " + salary_range[:8]
+                    # Reposition the salary add-ons in salary_range string to the correct order
+                    for salary_add_on in ("+ commission", "+ equity"):
+                        if salary_range.startswith(salary_add_on):
+                            salary_range = salary_range[len(salary_add_on):] + " " + salary_range[:len(salary_add_on)]
+
+                print(job_title + ": " + salary_range)
 
             # Some jobs have commission with other salary types. Others have only commission.
             if "commission" in job_description_text:
                 if not commission_already_added:
                     salary_range += " + commission"
                     commission_already_added = True
-                commission_terms = ["commission only", "commission-only", "only commission", "commission based"]
-                if any(commission_term in job_description_text for commission_term in commission_terms):
-                    salary_range = "Unpaid"
+                if any(commission_term in job_description_text for commission_term in
+                       ("commission only", "commission-only",
+                        "only commission", "commission based")):
+                    salary_range = "Commission only"
                     break
 
             # Some jobs only provide equity, others have it on top of a salary.
@@ -127,8 +126,7 @@ def scrape_job_post(div):
                 if not equity_already_added:
                     salary_range += " + equity"
                     equity_already_added = True
-                equity_terms = ["equity only", "equity-only", "only equity", "equity based"]
-                if any(equity_term in job_description_text for equity_term in equity_terms):
+                if any(equity_term in job_description_text for equity_term in ("equity only", "equity-only", "only equity", "equity based")):
                     salary_range = "Equity only"
                     break
 
@@ -173,6 +171,8 @@ def search_for_jobs(current_soup, last_date_to_check, driver):
     job_list, hyperlink_list, company_link_list = [], [], []
     keep_searching = True
     while keep_searching:
-        job_list, hyperlink_list, company_link_list, keep_searching = scrape_page(current_soup, last_date_to_check, job_list, hyperlink_list, company_link_list)
+        job_list, hyperlink_list, company_link_list, keep_searching = scrape_page(current_soup, last_date_to_check,
+                                                                                  job_list, hyperlink_list,
+                                                                                  company_link_list)
         current_soup = go_to_new_page(driver)
     return job_list, hyperlink_list, company_link_list
