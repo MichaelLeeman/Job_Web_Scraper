@@ -66,7 +66,7 @@ def scrape_job_post(div):
             if any(unpaid_term in job_description_text for unpaid_term in ("unpaid", "voluntary", "volunteer", "no salary")):
                 salary_range = "Unpaid"
 
-            elif "competitive salary" in job_description_text or "appropriate salary" in job_description_text:
+            elif "competitive" in job_description_text or "appropriate salary" in job_description_text:
                 salary_range = "Competitive salary"
 
             # sometimes the salary is given in the job description's text. These are found by searching for common characters.
@@ -75,17 +75,22 @@ def scrape_job_post(div):
                     break
                 else:
                     # Find a word in the text that seems to resemble a salary range
-                    for word in job_description_text.split():
+                    text_list = job_description_text.split()
+                    for word in text_list:
+                        word_index = text_list.index(word)
                         word = word.strip('-').strip(",").strip(".")
                         if word.startswith("£"):
                             # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
-                            if any(unwanted_term in word for unwanted_term in ("b", "m", "s")):
+                            if any(unwanted_term in word for unwanted_term in ("b", "m", "s", "££")):
+                                salary_range = "Unspecified salary"
+                            elif any(amount in text_list[word_index + 1].lower() for amount in ("million", "billion")):
                                 salary_range = "Unspecified salary"
                             else:
                                 # Reformat salaries written in "k" format into "000" format and add it to salary range
                                 word = word.replace("k", ",000")
                                 salary_range = salary_range.replace("Unspecified salary", "")
                                 salary_range += word + " - "
+
                         # Sometimes the upper range is separated from the lower range making it a new word. So add it.
                         elif "000" in word:
                             salary_range += word
@@ -107,8 +112,6 @@ def scrape_job_post(div):
                     for salary_add_on in ("+ commission", "+ equity"):
                         if salary_range.startswith(salary_add_on):
                             salary_range = salary_range[len(salary_add_on):] + " " + salary_range[:len(salary_add_on)]
-
-                print(job_title + ": " + salary_range)
 
             # Some jobs have commission with other salary types. Others have only commission.
             if "commission" in job_description_text:
