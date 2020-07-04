@@ -75,24 +75,30 @@ def scrape_job_post(div):
                     break
                 else:
                     # Find a word in the text that seems to resemble a salary range
-                    text_list = job_description_text.split()
+                    text_list, salary_index = job_description_text.split(), 0
                     for word in text_list:
-                        word_index = text_list.index(word)
+                        current_word_index = text_list.index(word)
                         word = word.strip('-').strip(",").strip(".")
                         if word.startswith("£"):
                             # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
                             if any(unwanted_term in word for unwanted_term in ("b", "m", "s", "££")):
                                 salary_range = "Unspecified salary"
-                            elif any(amount in text_list[word_index + 1].lower() for amount in ("million", "billion")):
-                                salary_range = "Unspecified salary"
                             else:
+                                # Check ahead of the string for words that are not associated with salaries
+                                salary_index = current_word_index
+                                try:
+                                    if any(amount in text_list[salary_index + 1].lower() for amount in ("million", "billion")):
+                                        salary_range = "Unspecified salary"
+                                        break
+                                except IndexError:
+                                    pass
                                 # Reformat salaries written in "k" format into "000" format and add it to salary range
                                 word = word.replace("k", ",000")
                                 salary_range = salary_range.replace("Unspecified salary", "")
                                 salary_range += word + " - "
-
                         # Sometimes the upper range is separated from the lower range making it a new word. So add it.
                         elif "000" in word:
+                            salary_index = current_word_index
                             salary_range += word
 
                     # Formatting by removing unwanted characters from the string and changing thousand separator to comma
@@ -107,6 +113,27 @@ def scrape_job_post(div):
                     # Adding "per year" at the end of salaries in thousands
                     if salary_range.endswith("000"):
                         salary_range += " per year"
+                    else:
+                        # Check ahead of the string whether the salary is paid per hour, per day or etc.
+                        try:
+                            if "hour" in text_list[salary_index + 1].lower():
+                                salary_range += " per hour"
+                            elif "day" in text_list[salary_index + 1].lower():
+                                salary_range += " per day"
+                            elif "week" in text_list[salary_index + 1].lower():
+                                salary_range += " per week"
+                            elif "month" in text_list[salary_index + 1].lower():
+                                salary_range += " per month"
+                            elif "hour" in text_list[salary_index + 2].lower():
+                                salary_range += " per hour"
+                            elif "day" in text_list[salary_index + 2].lower():
+                                salary_range += " per day"
+                            elif "week" in text_list[salary_index + 2].lower():
+                                salary_range += " per week"
+                            elif "month" in text_list[salary_index + 2].lower():
+                                salary_range += " per month"
+                        except IndexError:
+                            pass
 
                     # Reposition the salary add-ons in salary_range string to the correct order
                     for salary_add_on in ("+ commission", "+ equity"):
