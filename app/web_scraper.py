@@ -31,6 +31,117 @@ def soup_creator(URL_link, max_retry=3, sleep_time=0.5):
     return current_soup
 
 
+# Finds the salary range in the text of the job description.
+def salary_finder(job_description_soup, tag_to_search):
+    salary_range, commission_already_added, equity_already_added = "Unspecified salary", False, False
+
+    for p_element in job_description_soup.find_all(name=tag_to_search):
+        job_description_text = p_element.text.lower()
+
+        # Unpaid positions, commission only and other salary types are only specified in the job description text
+        if any(unpaid_term in job_description_text for unpaid_term in
+               ("unpaid", "voluntary", "volunteer", "no salary")):
+            salary_range = "Unpaid"
+
+        elif "competitive" in job_description_text or "appropriate salary" in job_description_text:
+            salary_range = "Competitive salary"
+
+        # sometimes the salary is given in the job description's text. These are found by searching for common characters.
+        elif "£" in job_description_text:
+            if any(other_term in salary_range for other_term in ("Unpaid", "Competitive salary", "Equity only")):
+                break
+            else:
+                # Find a word in the text that seems to resemble a salary range
+                text_list, salary_index = job_description_text.split(), 0
+                for word in text_list:
+                    current_word_index = text_list.index(word)
+                    word = word.strip('-').strip(",").strip(".")
+                    if word.startswith("£"):
+                        # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
+                        if any(unwanted_term in word for unwanted_term in ("b", "m", "s", "££")):
+                            salary_range = "Unspecified salary"
+                        else:
+                            # Check ahead of the string for words that are not associated with salaries
+                            salary_index = current_word_index
+                            try:
+                                if any(amount in text_list[salary_index + 1].lower() for amount in
+                                       ("million", "billion")):
+                                    salary_range = "Unspecified salary"
+                                    break
+                            except IndexError:
+                                pass
+                            # Reformat salaries written in "k" format into "000" format and add it to salary range
+                            word = word.replace("k", ",000")
+                            salary_range = salary_range.replace("Unspecified salary", "")
+                            salary_range += word + " - "
+                    # Sometimes the upper range is separated from the lower range making it a new word. So add it.
+                    elif "000" in word:
+                        salary_index = current_word_index
+                        salary_range += word
+
+                # Formatting by removing unwanted characters from the string and changing thousand separator to comma
+                salary_range = salary_range.strip(" - ").replace(".000", ",000")
+                salary_range = salary_range.replace("/annual", " per year").replace("/month", " per month")
+
+                # Adding spaces between the salary range
+                if "0-" in salary_range:
+                    index = salary_range.find("0-")
+                    salary_range = salary_range[:index] + "0 - " + salary_range[index + 2:]
+
+                # Adding "per year" at the end of salaries in thousands
+                if salary_range.endswith("000"):
+                    salary_range += " per year"
+                else:
+                    # Check ahead of the string whether the salary is paid per hour, per day or etc.
+                    try:
+                        if "hour" in text_list[salary_index + 1].lower():
+                            salary_range += " per hour"
+                        elif "day" in text_list[salary_index + 1].lower():
+                            salary_range += " per day"
+                        elif "week" in text_list[salary_index + 1].lower():
+                            salary_range += " per week"
+                        elif "month" in text_list[salary_index + 1].lower():
+                            salary_range += " per month"
+                        elif "hour" in text_list[salary_index + 2].lower():
+                            salary_range += " per hour"
+                        elif "day" in text_list[salary_index + 2].lower():
+                            salary_range += " per day"
+                        elif "week" in text_list[salary_index + 2].lower():
+                            salary_range += " per week"
+                        elif "month" in text_list[salary_index + 2].lower():
+                            salary_range += " per month"
+                    except IndexError:
+                        pass
+
+                # Reposition the salary add-ons in salary_range string to the correct order
+                for salary_add_on in ("+ commission", "+ equity"):
+                    if salary_range.startswith(salary_add_on):
+                        salary_range = salary_range[len(salary_add_on):] + " " + salary_range[:len(salary_add_on)]
+
+            # Some jobs have commission with other salary types. Others have only commission.
+            if "commission" in job_description_text:
+                if not commission_already_added:
+                    salary_range += " + commission"
+                    commission_already_added = True
+                if any(commission_term in job_description_text for commission_term in
+                       ("commission only", "commission-only",
+                        "only commission", "commission based")):
+                    salary_range = "Commission only"
+                    break
+
+            # Some jobs only provide equity, others have it on top of a salary.
+            if "equity" in job_description_text:
+                if not equity_already_added:
+                    salary_range += " + equity"
+                    equity_already_added = True
+                if any(equity_term in job_description_text for equity_term in ("equity only", "equity-only", "only equity", "equity based")):
+                    salary_range = "Equity only"
+                    break
+    return salary_range
+
+
+
+
 # Extracts details from the current job posting
 def scrape_job_post(div):
     job_hyperlink = div.a["href"]
@@ -57,108 +168,13 @@ def scrape_job_post(div):
         # If salary is given in the icon then the salary range can be scraped from it like a list
         salary_range = salary_contents.contents[1].strip()
     else:
-        salary_range, commission_already_added, equity_already_added = "Unspecified salary", False, False
-
-        for p_element in job_description_soup.find_all(name="p"):
-            job_description_text = p_element.text.lower()
-
-            # Unpaid positions, commission only and other salary types are only specified in the job description text
-            if any(unpaid_term in job_description_text for unpaid_term in ("unpaid", "voluntary", "volunteer", "no salary")):
-                salary_range = "Unpaid"
-
-            elif "competitive" in job_description_text or "appropriate salary" in job_description_text:
-                salary_range = "Competitive salary"
-
-            # sometimes the salary is given in the job description's text. These are found by searching for common characters.
-            elif "£" in job_description_text:
-                if any(other_term in salary_range for other_term in ("Unpaid", "Competitive salary", "Equity only")):
-                    break
-                else:
-                    # Find a word in the text that seems to resemble a salary range
-                    text_list, salary_index = job_description_text.split(), 0
-                    for word in text_list:
-                        current_word_index = text_list.index(word)
-                        word = word.strip('-').strip(",").strip(".")
-                        if word.startswith("£"):
-                            # Rarely words containing "£" are not salaries but something like the market shares in millions/billions.
-                            if any(unwanted_term in word for unwanted_term in ("b", "m", "s", "££")):
-                                salary_range = "Unspecified salary"
-                            else:
-                                # Check ahead of the string for words that are not associated with salaries
-                                salary_index = current_word_index
-                                try:
-                                    if any(amount in text_list[salary_index + 1].lower() for amount in ("million", "billion")):
-                                        salary_range = "Unspecified salary"
-                                        break
-                                except IndexError:
-                                    pass
-                                # Reformat salaries written in "k" format into "000" format and add it to salary range
-                                word = word.replace("k", ",000")
-                                salary_range = salary_range.replace("Unspecified salary", "")
-                                salary_range += word + " - "
-                        # Sometimes the upper range is separated from the lower range making it a new word. So add it.
-                        elif "000" in word:
-                            salary_index = current_word_index
-                            salary_range += word
-
-                    # Formatting by removing unwanted characters from the string and changing thousand separator to comma
-                    salary_range = salary_range.strip(" - ").replace(".000", ",000")
-                    salary_range = salary_range.replace("/annual", " per year").replace("/month", " per month")
-
-                    # Adding spaces between the salary range
-                    if "0-" in salary_range:
-                        index = salary_range.find("0-")
-                        salary_range = salary_range[:index] + "0 - " + salary_range[index + 2:]
-
-                    # Adding "per year" at the end of salaries in thousands
-                    if salary_range.endswith("000"):
-                        salary_range += " per year"
-                    else:
-                        # Check ahead of the string whether the salary is paid per hour, per day or etc.
-                        try:
-                            if "hour" in text_list[salary_index + 1].lower():
-                                salary_range += " per hour"
-                            elif "day" in text_list[salary_index + 1].lower():
-                                salary_range += " per day"
-                            elif "week" in text_list[salary_index + 1].lower():
-                                salary_range += " per week"
-                            elif "month" in text_list[salary_index + 1].lower():
-                                salary_range += " per month"
-                            elif "hour" in text_list[salary_index + 2].lower():
-                                salary_range += " per hour"
-                            elif "day" in text_list[salary_index + 2].lower():
-                                salary_range += " per day"
-                            elif "week" in text_list[salary_index + 2].lower():
-                                salary_range += " per week"
-                            elif "month" in text_list[salary_index + 2].lower():
-                                salary_range += " per month"
-                        except IndexError:
-                            pass
-
-                    # Reposition the salary add-ons in salary_range string to the correct order
-                    for salary_add_on in ("+ commission", "+ equity"):
-                        if salary_range.startswith(salary_add_on):
-                            salary_range = salary_range[len(salary_add_on):] + " " + salary_range[:len(salary_add_on)]
-
-            # Some jobs have commission with other salary types. Others have only commission.
-            if "commission" in job_description_text:
-                if not commission_already_added:
-                    salary_range += " + commission"
-                    commission_already_added = True
-                if any(commission_term in job_description_text for commission_term in
-                       ("commission only", "commission-only",
-                        "only commission", "commission based")):
-                    salary_range = "Commission only"
-                    break
-
-            # Some jobs only provide equity, others have it on top of a salary.
-            if "equity" in job_description_text:
-                if not equity_already_added:
-                    salary_range += " + equity"
-                    equity_already_added = True
-                if any(equity_term in job_description_text for equity_term in ("equity only", "equity-only", "only equity", "equity based")):
-                    salary_range = "Equity only"
-                    break
+        salary_range = salary_finder(job_description_soup, tag_to_search="p")
+        if salary_range == "Unspecified salary":
+            salary_range = salary_finder(job_description_soup, tag_to_search="li")
+        elif salary_range == "Competitive salary":
+            found_salary = salary_finder(job_description_soup, tag_to_search="li")
+            if found_salary.startswith("£") or "per" in found_salary:
+                salary_range = found_salary
 
     # Scraping the hyperlink to the company's website
     company_hyperlink_element = job_description_soup.find(attrs={"class": "d-flex my-4 container"})
