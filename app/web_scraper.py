@@ -33,7 +33,7 @@ def soup_creator(URL_link, max_retry=3, sleep_time=0.5):
 
 # Finds the salary range in the text of the job description.
 def salary_finder(job_description_soup, tag_to_search):
-    salary_range, commission_already_added, equity_already_added = "Unspecified salary", False, False
+    salary_range = "Unspecified salary"
 
     for p_element in job_description_soup.find_all(name=tag_to_search):
         job_description_text = p_element.text.lower()
@@ -48,7 +48,7 @@ def salary_finder(job_description_soup, tag_to_search):
 
         # sometimes the salary is given in the job description's text. These are found by searching for common characters.
         elif "£" in job_description_text:
-            if any(other_term in salary_range for other_term in ("Unpaid", "Competitive salary", "Equity only")):
+            if any(other_term in salary_range for other_term in ("Unpaid", "Commission only", "Equity only")):
                 break
             else:
                 # Find a word in the text that seems to resemble a salary range
@@ -72,7 +72,7 @@ def salary_finder(job_description_soup, tag_to_search):
                                 pass
                             # Reformat salaries written in "k" format into "000" format and add it to salary range
                             word = word.replace("k", ",000")
-                            salary_range = salary_range.replace("Unspecified salary", "")
+                            salary_range = salary_range.replace("Unspecified salary", "").replace("Competitive salary", "")
                             salary_range += word + " - "
                     # Sometimes the upper range is separated from the lower range making it a new word. So add it.
                     elif "000" in word:
@@ -112,34 +112,33 @@ def salary_finder(job_description_soup, tag_to_search):
                             salary_range += " per month"
                     except IndexError:
                         pass
-
-                # Reposition the salary add-ons in salary_range string to the correct order
-                for salary_add_on in ("+ commission", "+ equity"):
-                    if salary_range.startswith(salary_add_on):
-                        salary_range = salary_range[len(salary_add_on):] + " " + salary_range[:len(salary_add_on)]
-
-            # Some jobs have commission with other salary types. Others have only commission.
-            if "commission" in job_description_text:
-                if not commission_already_added:
-                    salary_range += " + commission"
-                    commission_already_added = True
-                if any(commission_term in job_description_text for commission_term in
-                       ("commission only", "commission-only",
-                        "only commission", "commission based")):
-                    salary_range = "Commission only"
-                    break
-
-            # Some jobs only provide equity, others have it on top of a salary.
-            if "equity" in job_description_text:
-                if not equity_already_added:
-                    salary_range += " + equity"
-                    equity_already_added = True
-                if any(equity_term in job_description_text for equity_term in ("equity only", "equity-only", "only equity", "equity based")):
-                    salary_range = "Equity only"
-                    break
+    salary_range = salary_additions(job_description_text, salary_range)
     return salary_range
 
 
+# Find whether the job offers salary add-ons such as commission or equity. Also, find whether the job is commission or equity only.
+def salary_additions(job_description_text, salary_range):
+    # Some jobs have commission with other salary types. Others have only commission.
+    if "commission" in job_description_text:
+        if "commission" not in salary_range.lower():
+            salary_range += " + commission"
+        if any(commission_term in job_description_text for commission_term in
+               ("commission only", "commission-only", "only commission", "commission based")):
+            salary_range = "Commission only"
+
+    # Some jobs only provide equity, others have it on top of a salary.
+    if "equity" in job_description_text:
+        if " equity" not in salary_range.lower():
+            salary_range += " + equity"
+        if any(equity_term in job_description_text for equity_term in
+               ("equity only", "equity-only", "only equity", "equity based")):
+            salary_range = "Equity only"
+
+    # Reposition the salary add-ons in salary_range string to the correct order
+    for salary_add_on in ("+ commission", "+ equity"):
+        if salary_range.startswith(salary_add_on):
+            salary_range = salary_range[len(salary_add_on):] + " " + salary_range[:len(salary_add_on)]
+    return salary_range
 
 
 # Extracts details from the current job posting
@@ -167,7 +166,13 @@ def scrape_job_post(div):
     if salary_contents is not None:
         # If salary is given in the icon then the salary range can be scraped from it like a list
         salary_range = salary_contents.contents[1].strip()
+        # Find the salary add-ons in the job description page
+        for tag in ("p", "li"):
+            for p_element in job_description_soup.find_all(name=tag):
+                job_description_text = p_element.text.lower()
+                salary_range = salary_additions(job_description_text, salary_range)
     else:
+        # Else, find whether the salary in given in the text tags of the job description page
         salary_range = salary_finder(job_description_soup, tag_to_search="p")
         if salary_range == "Unspecified salary":
             salary_range = salary_finder(job_description_soup, tag_to_search="li")
