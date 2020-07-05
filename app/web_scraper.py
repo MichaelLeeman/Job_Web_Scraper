@@ -52,7 +52,7 @@ def salary_finder(job_description_soup, tag_to_search):
                 break
             else:
                 # Find a word in the text that seems to resemble a salary range
-                text_list, salary_index = job_description_text.split(), 0
+                text_list, salary_index = job_description_text.lower().split(), 0
                 for word in text_list:
                     current_word_index = text_list.index(word)
                     word = word.strip('-').strip(",").strip(".")
@@ -64,7 +64,7 @@ def salary_finder(job_description_soup, tag_to_search):
                             # Check ahead of the string for words that are not associated with salaries
                             salary_index = current_word_index
                             try:
-                                if any(amount in text_list[salary_index + 1].lower() for amount in
+                                if any(amount in text_list[salary_index + 1] for amount in
                                        ("million", "billion")):
                                     salary_range = "Unspecified salary"
                                     break
@@ -94,21 +94,21 @@ def salary_finder(job_description_soup, tag_to_search):
                 else:
                     # Check ahead of the string whether the salary is paid per hour, per day or etc.
                     try:
-                        if "hour" in text_list[salary_index + 1].lower():
+                        if "hour" in text_list[salary_index + 1]:
                             salary_range += " per hour"
-                        elif "day" in text_list[salary_index + 1].lower():
+                        elif "day" in text_list[salary_index + 1]:
                             salary_range += " per day"
-                        elif "week" in text_list[salary_index + 1].lower():
+                        elif "week" in text_list[salary_index + 1]:
                             salary_range += " per week"
-                        elif "month" in text_list[salary_index + 1].lower():
+                        elif "month" in text_list[salary_index + 1]:
                             salary_range += " per month"
-                        elif "hour" in text_list[salary_index + 2].lower():
+                        elif "hour" in text_list[salary_index + 2]:
                             salary_range += " per hour"
-                        elif "day" in text_list[salary_index + 2].lower():
+                        elif "day" in text_list[salary_index + 2]:
                             salary_range += " per day"
-                        elif "week" in text_list[salary_index + 2].lower():
+                        elif "week" in text_list[salary_index + 2]:
                             salary_range += " per week"
-                        elif "month" in text_list[salary_index + 2].lower():
+                        elif "month" in text_list[salary_index + 2]:
                             salary_range += " per month"
                     except IndexError:
                         pass
@@ -120,7 +120,7 @@ def salary_finder(job_description_soup, tag_to_search):
 def salary_additions(job_description_text, salary_range):
     # Some jobs have commission with other salary types. Others have only commission.
     if "commission" in job_description_text:
-        if "commission" not in salary_range.lower():
+        if "commission" not in salary_range:
             salary_range += " + commission"
         if any(commission_term in job_description_text for commission_term in
                ("commission only", "commission-only", "only commission", "commission based")):
@@ -128,14 +128,41 @@ def salary_additions(job_description_text, salary_range):
 
     # Some jobs only provide equity, others have it on top of a salary.
     if "equity" in job_description_text:
-        if " equity" not in salary_range.lower():
+        if "equity" not in salary_range:
             salary_range += " + equity"
         if any(equity_term in job_description_text for equity_term in
                ("equity only", "equity-only", "only equity", "equity based")):
             salary_range = "Equity only"
 
+    # Find if the job offers bonuses
+    if "bonus" in job_description_text:
+        # If bonus is not already in salary_range
+        if "bonus" not in salary_range:
+            # Jobs sometimes uses the word bonus to describe additional non-required skills/experiences
+            if any(non_bonus_term in job_description_text for non_bonus_term in
+                   ("experience", "points", "skill")):
+                pass
+            else:
+                # Find the index of the bonus in the string
+                text_list = job_description_text.lower().split()
+                for word in text_list:
+                    if "bonus" in word:
+                        bonus_index = text_list.index(word)
+                try:
+                    # Look at the previous words before the bonus word. Again, jobs describe additional skills/experiences
+                    # with sentences like "it would be a bonus to have..." or "It is a bonus to have.."
+                    previous_words = " ".join(text_list[bonus_index - 3: bonus_index])
+                    if "would be a" in previous_words:
+                        pass
+                    elif "is a" in previous_words:
+                        pass
+                    else:
+                        salary_range += " + bonus"
+                except (ValueError, UnboundLocalError):
+                    pass
+
     # Reposition the salary add-ons in salary_range string to the correct order
-    for salary_add_on in ("+ commission", "+ equity"):
+    for salary_add_on in ("+ commission", "+ equity", "+ bonus"):
         if salary_range.startswith(salary_add_on):
             salary_range = salary_range[len(salary_add_on):] + " " + salary_range[:len(salary_add_on)]
     return salary_range
@@ -170,7 +197,7 @@ def scrape_job_post(div):
         for tag in ("p", "li"):
             for p_element in job_description_soup.find_all(name=tag):
                 job_description_text = p_element.text.lower()
-                salary_range = salary_additions(job_description_text, salary_range)
+                salary_range = salary_additions(job_description_text, salary_range.lower())
     else:
         # Else, find whether the salary in given in the text tags of the job description page
         salary_range = salary_finder(job_description_soup, tag_to_search="p")
