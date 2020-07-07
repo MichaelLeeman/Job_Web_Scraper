@@ -4,6 +4,7 @@ import time as t
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+from collections import OrderedDict
 
 
 # Makes a GET request to the URL and retries the connection if a connection error occurs.
@@ -245,6 +246,7 @@ def go_to_new_page(driver):
 
 
 # Keeps scraping for jobs on the current page while checking that they aren't older than a fortnight ago.
+# Then remove duplicate jobs by convert to and from a dictionary.
 def search_for_jobs(current_soup, last_date_to_check, driver):
     job_list, hyperlink_list, company_link_list = [], [], []
     keep_searching = True
@@ -253,4 +255,5 @@ def search_for_jobs(current_soup, last_date_to_check, driver):
                                                                                   job_list, hyperlink_list,
                                                                                   company_link_list)
         current_soup = go_to_new_page(driver)
+        job_list = list(OrderedDict.fromkeys(job_list))
     return job_list, hyperlink_list, company_link_list
