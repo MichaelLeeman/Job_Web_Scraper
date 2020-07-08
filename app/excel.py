@@ -1,4 +1,6 @@
 # This module setups the excel worksheet, stylise it and appends the job data
+import datetime
+from collections import OrderedDict
 
 from openpyxl.styles import Font, PatternFill
 from openpyxl import Workbook
@@ -8,6 +10,7 @@ from openpyxl import load_workbook
 # setups the worksheet by appending the data and calling the other styling functions
 def setup_xlsx(worksheet, job_list):
     append_jobs_to_xl(job_list, worksheet)
+    sort_job_list(worksheet)
     autofit_columns(worksheet)
     colour_rows(worksheet, colour="BBDEFB")
     filter_and_freeze_panes(worksheet)
@@ -78,6 +81,32 @@ def append_jobs_to_xl(job_list, worksheet):
         # Stop adding jobs from job_list to the worksheet
         else:
             break
+
+
+# Sorts all the jobs in the worksheet, from the most recently posted to the oldest
+def sort_job_list(worksheet):
+    table, all_jobs, row = worksheet["A2":"F" + str(worksheet.max_row)], [], 2
+    # All the jobs in the table needs to be taken out
+    for job in table:
+        current_job = []
+        for job_detail in job:
+            current_job.append(job_detail.value)
+        # Try finding the job's and company's link, if either is not there then append None
+        try:
+            current_job.append(worksheet["A" + str(row)].hyperlink.target)
+        except AttributeError:
+            current_job.append(None)
+        try:
+            current_job.append(worksheet["B" + str(row)].hyperlink.target)
+        except AttributeError:
+            current_job.append(None)
+        all_jobs.append(current_job)
+        row += 1
+
+    # Delete the current order of the jobs in the worksheet and add the ordered job list
+    worksheet.delete_rows(2, worksheet.max_row)
+    all_jobs.sort(key=lambda x: x[3], reverse=True)
+    append_jobs_to_xl(all_jobs, worksheet)
 
 
 # Initialise a new workbook and worksheet
