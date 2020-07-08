@@ -6,8 +6,8 @@ from openpyxl import load_workbook
 
 
 # setups the worksheet by appending the data and calling the other styling functions
-def setup_xlsx(worksheet, job_list, hyperlink_list, company_link_list):
-    append_jobs_to_xl(job_list, hyperlink_list, company_link_list, worksheet)
+def setup_xlsx(worksheet, job_list):
+    append_jobs_to_xl(job_list, worksheet)
     autofit_columns(worksheet)
     colour_rows(worksheet, colour="BBDEFB")
     filter_and_freeze_panes(worksheet)
@@ -54,8 +54,8 @@ def filter_and_freeze_panes(worksheet):
 
 
 # Appends each job opening to the worksheet and creates a hyperlink to its page
-def append_jobs_to_xl(job_list, hyperlink_list, company_link_list, worksheet):
-    URL_index, first_xl_job = 0, tuple(cell.value for row in worksheet["A2":"B2"] for cell in row)
+def append_jobs_to_xl(job_list, worksheet):
+    first_xl_job = tuple(cell.value for row in worksheet["A2":"B2"] for cell in row)
 
     # Fixes bug where a blank row is appended
     if worksheet["A2"].value is None:
@@ -65,16 +65,16 @@ def append_jobs_to_xl(job_list, hyperlink_list, company_link_list, worksheet):
     for job in job_list:
         # Rather than compare each job in the worksheet, only compare it to the first job to save time
         if job[:2] != first_xl_job:
-            worksheet.append(job)
+            worksheet.append(job[0:6])
             current_row = worksheet._current_row
 
             # Adds a hyperlink to each job web page in the job title column
-            worksheet["A" + str(current_row)].hyperlink = hyperlink_list[URL_index]
+            worksheet["A" + str(current_row)].hyperlink = job[6]
 
             # If the company link was given then add the hyperlink
-            if company_link_list[URL_index] is not None:
-                worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
-            URL_index += 1
+            if job[7] is not None:
+                worksheet["B" + str(current_row)].hyperlink = job[7]
+
         # Stop adding jobs from job_list to the worksheet
         else:
             break

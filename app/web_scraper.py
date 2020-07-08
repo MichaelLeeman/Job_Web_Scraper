@@ -217,25 +217,23 @@ def scrape_job_post(div):
     if "https://workinstartups.com/" in company_hyperlink:
         company_hyperlink = None
 
-    job_details = (job_title, company_name, job_type, date_posted, expiry_date, salary_range)
-    return job_details, job_hyperlink, company_hyperlink
+    job_details = (job_title, company_name, job_type, date_posted, expiry_date, salary_range, job_hyperlink, company_hyperlink)
+    return job_details
 
 
 # Scrape the job postings on the current page while the date is not later than last_date
-def scrape_page(soup, last_date, job_list, hyperlink_list, company_link_list):
+def scrape_page(soup, last_date, job_list):
     keep_searching = True
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
-        job_details, job_hyperlink, company_hyperlink = scrape_job_post(div)
+        job_details = scrape_job_post(div)
         job_date = datetime.strptime(job_details[3], '%d-%b-%Y')
         # Stops the search if the jobs' postings have a later date than last_date
         if job_date < last_date:
             keep_searching = False
             break
         # Append the job if it's in date
-        hyperlink_list.append(job_hyperlink)
-        company_link_list.append(company_hyperlink)
         job_list.append(job_details)
-    return job_list, hyperlink_list, company_link_list, keep_searching
+    return job_list, keep_searching
 
 
 # Goes to the next page
@@ -248,12 +246,9 @@ def go_to_new_page(driver):
 # Keeps scraping for jobs on the current page while checking that they aren't older than a fortnight ago.
 # Then remove duplicate jobs by convert to and from a dictionary.
 def search_for_jobs(current_soup, last_date_to_check, driver):
-    job_list, hyperlink_list, company_link_list = [], [], []
-    keep_searching = True
+    job_list, keep_searching = [], True
     while keep_searching:
-        job_list, hyperlink_list, company_link_list, keep_searching = scrape_page(current_soup, last_date_to_check,
-                                                                                  job_list, hyperlink_list,
-                                                                                  company_link_list)
+        job_list, keep_searching = scrape_page(current_soup, last_date_to_check, job_list)
         current_soup = go_to_new_page(driver)
         job_list = list(OrderedDict.fromkeys(job_list))
-    return job_list, hyperlink_list, company_link_list
+    return job_list
