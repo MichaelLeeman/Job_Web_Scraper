@@ -55,23 +55,27 @@ def filter_and_freeze_panes(worksheet):
 
 # Appends each job opening to the worksheet and creates a hyperlink to its page
 def append_jobs_to_xl(job_list, hyperlink_list, company_link_list, worksheet):
-    URL_index, first_xl_job = 0, tuple(cell.value for cell in worksheet[2:2])
+    URL_index, first_xl_job = 0, tuple(cell.value for row in worksheet["A2":"B2"] for cell in row)
 
     # Fixes bug where a blank row is appended
     if worksheet["A2"].value is None:
         worksheet.delete_rows(2)
 
-    # Only append jobs that are not in the worksheet. This is done by checking over an iteration whether the first job
-    # in the worksheet is the same as the current job in the job list.
+    # Only append jobs that are not already in the worksheet.
     for job in job_list:
-        if job != first_xl_job:
+        # Rather than compare each job in the worksheet, only compare it to the first job to save time
+        if job[:2] != first_xl_job:
             worksheet.append(job)
             current_row = worksheet._current_row
+
             # Adds a hyperlink to each job web page in the job title column
             worksheet["A" + str(current_row)].hyperlink = hyperlink_list[URL_index]
+
+            # If the company link was given then add the hyperlink
             if company_link_list[URL_index] is not None:
                 worksheet["B" + str(current_row)].hyperlink = company_link_list[URL_index]
             URL_index += 1
+        # Stop adding jobs from job_list to the worksheet
         else:
             break
 
