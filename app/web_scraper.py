@@ -199,6 +199,9 @@ def scrape_job_post(div):
             for p_element in job_description_soup.find_all(name=tag):
                 job_description_text = p_element.text.lower()
                 salary_range = salary_additions(job_description_text, salary_range.lower())
+    elif any(commission_term in job_title.lower() for commission_term in ("commission only", "commission-only", "only commission", "commission based")):
+        # Sometimes commission only jobs are specified in their job title
+        salary_range = "Commission only"
     else:
         # Else, find whether the salary in given in the text tags of the job description page
         salary_range = salary_finder(job_description_soup, tag_to_search="p")
