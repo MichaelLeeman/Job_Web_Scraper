@@ -1,6 +1,7 @@
 # This module gives functions for setting up the excel worksheet including stylising the table, appending
 # the scraped jobs and sorting the job data. It also provides functions for saving and loading workbooks.
 
+from datetime import datetime
 from openpyxl.styles import Font, PatternFill
 from openpyxl import Workbook
 from openpyxl import load_workbook
@@ -104,7 +105,7 @@ def sort_job_list(worksheet):
 
     # Delete the current order of the jobs in the worksheet and add the ordered job list
     worksheet.delete_rows(2, worksheet.max_row)
-    all_jobs.sort(key=lambda x: x[3], reverse=True)
+    all_jobs = sorted(all_jobs, key=lambda date: datetime.strptime(date[3], "%d-%b-%Y"), reverse=True)
     append_jobs_to_xl(all_jobs, worksheet)
 
 

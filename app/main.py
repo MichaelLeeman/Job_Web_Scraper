@@ -22,7 +22,7 @@ file_path = os.path.abspath("main.py").rstrip('/app/main.py') + '//Workbooks' + 
 if os.path.isfile(file_path):
     workbook, worksheet = excel.load_xlsx(file_path)
     last_scrape_date = excel.get_first_job_date(worksheet)
-    last_scrape_date = datetime.strptime(last_date, "%d-%b-%Y")
+    last_scrape_date = datetime.strptime(last_scrape_date, "%d-%b-%Y")
 # If not, create a new workbook and append all of the jobs posted within the month
 else:
     current_date = datetime.today()
