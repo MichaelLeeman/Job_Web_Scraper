@@ -1,14 +1,13 @@
-# This module setups the excel worksheet, stylise it and appends the job data
-import datetime
-from collections import OrderedDict
+# This module gives functions for setting up the excel worksheet including stylising the table, appending
+# the scraped jobs and sorting the job data. It also provides functions for saving and loading workbooks.
 
 from openpyxl.styles import Font, PatternFill
 from openpyxl import Workbook
 from openpyxl import load_workbook
 
 
-# setups the worksheet by appending the data and calling the other styling functions
-def setup_xlsx(worksheet, job_list):
+# Updates the worksheet by appending the data, sort it's ordering and calling the other styling functions
+def update_xlsx(worksheet, job_list):
     append_jobs_to_xl(job_list, worksheet)
     sort_job_list(worksheet)
     autofit_columns(worksheet)
@@ -107,6 +106,12 @@ def sort_job_list(worksheet):
     worksheet.delete_rows(2, worksheet.max_row)
     all_jobs.sort(key=lambda x: x[3], reverse=True)
     append_jobs_to_xl(all_jobs, worksheet)
+
+
+# Returns the posted date of the first job
+def get_first_job_date(worksheet):
+    first_job_date = worksheet["D2"].value
+    return first_job_date
 
 
 # Initialise a new workbook and worksheet
