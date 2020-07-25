@@ -83,15 +83,28 @@ def append_jobs_to_xl(job_list, worksheet):
             break
 
 
-# Sorts all the jobs in the worksheet, from the most recently posted to the oldest
-def sort_job_list(worksheet):
+# Removes any job postings that pasted their deadline
+def remove_old_jobs(worksheet):
+    # Create a list of all the jobs and remove the outdated jobs by comparing the deadline to the current date.
+    all_jobs = get_jobs_in_table(worksheet)
+    for job in all_jobs:
+        if datetime.strptime(job[4], "%d-%b-%Y") < datetime.today():
+            all_jobs.remove(job)
+
+    # Delete all the jobs currently in the table and append the corrected job list.
+    worksheet.delete_rows(2, worksheet.max_row)
+    append_jobs_to_xl(all_jobs, worksheet)
+
+
+# Returns all of the jobs currently in the excel worksheet
+def get_jobs_in_table(worksheet):
     table, all_jobs, row = worksheet["A2":"F" + str(worksheet.max_row)], [], 2
     # All the jobs in the table needs to be taken out
     for job in table:
         current_job = []
         for job_detail in job:
             current_job.append(job_detail.value)
-        # Try finding the job's and company's link, if either is not there then append None
+        # Try finding the job's and company's link, if the job doesn't have a link then append None onto the end
         try:
             current_job.append(worksheet["A" + str(row)].hyperlink.target)
         except AttributeError:
@@ -102,7 +115,12 @@ def sort_job_list(worksheet):
             current_job.append(None)
         all_jobs.append(current_job)
         row += 1
+    return all_jobs
 
+
+# Sorts all the jobs in the worksheet, from the most recently posted to the oldest
+def sort_job_list(worksheet):
+    all_jobs = get_jobs_in_table(worksheet)
     # Delete the current order of the jobs in the worksheet and add the ordered job list
     worksheet.delete_rows(2, worksheet.max_row)
     all_jobs = sorted(all_jobs, key=lambda date: datetime.strptime(date[3], "%d-%b-%Y"), reverse=True)
@@ -128,6 +146,9 @@ def init_xlsx(worksheet_title):
 def load_xlsx(file_path):
     workbook = load_workbook(filename=file_path)
     worksheet = workbook.active
+
+    # Remove the outdated jobs currently in the worksheet
+    remove_old_jobs(worksheet)
     return workbook, worksheet
 
 
