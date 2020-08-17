@@ -18,7 +18,7 @@ def update_xlsx(worksheet, job_list):
 
 # Stylise the titles
 def create_table_headers(worksheet, font_colour, cell_colour):
-    table_headers = ("Job Openings", "Company", "Job Type", "Date Posted", "Deadline", "Salary Range")
+    table_headers = ("Job Openings", "Company", "Job Location", "Job Type", "Date Posted", "Deadline", "Salary Range")
     worksheet.append(table_headers)
 
     for column_title in worksheet[1:1]:
@@ -68,7 +68,7 @@ def append_jobs_to_xl(job_list, worksheet):
     for job in job_list:
         # Rather than compare each job in the worksheet, only compare it to the first job to save time
         if job[:2] != first_xl_job:
-            worksheet.append(job[0:6])
+            worksheet.append(job[0:7])
             current_row = worksheet._current_row
 
             # Adds a hyperlink to each job web page in the job title column
@@ -88,7 +88,7 @@ def remove_old_jobs(worksheet):
     # Create a list of all the jobs and remove the outdated jobs by comparing the deadline to the current date.
     all_jobs = get_jobs_in_table(worksheet)
     for job in all_jobs:
-        if datetime.strptime(job[4], "%d-%b-%Y") < datetime.today():
+        if datetime.strptime(job[5], "%d-%b-%Y") < datetime.today():
             all_jobs.remove(job)
 
     # Delete all the jobs currently in the table and append the corrected job list.
@@ -98,7 +98,7 @@ def remove_old_jobs(worksheet):
 
 # Returns all of the jobs currently in the excel worksheet
 def get_jobs_in_table(worksheet):
-    table, all_jobs, row = worksheet["A2":"F" + str(worksheet.max_row)], [], 2
+    table, all_jobs, row = worksheet["A2":"G" + str(worksheet.max_row)], [], 2
     # All the jobs in the table needs to be taken out
     for job in table:
         current_job = []
@@ -123,7 +123,7 @@ def sort_job_list(worksheet):
     all_jobs = get_jobs_in_table(worksheet)
     # Delete the current order of the jobs in the worksheet and add the ordered job list
     worksheet.delete_rows(2, worksheet.max_row)
-    all_jobs = sorted(all_jobs, key=lambda date: datetime.strptime(date[3], "%d-%b-%Y"), reverse=True)
+    all_jobs = sorted(all_jobs, key=lambda date: datetime.strptime(date[4], "%d-%b-%Y"), reverse=True)
     append_jobs_to_xl(all_jobs, worksheet)
 
 

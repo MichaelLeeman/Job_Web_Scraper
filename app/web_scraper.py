@@ -174,6 +174,7 @@ def scrape_job_post(div):
     job_hyperlink = div.a["href"]
     job_title = div.a["title"]
     company_name = div.find(name="span", attrs={"style": "display: ruby-base-container"}).string.split(None, 2)[1]
+    job_location = div.find(name="span", attrs={"style": "display: ruby-base-container"}).string.split()[-1]
     job_type = div.find("span").string
 
     # Format the date posted to match other dates
@@ -220,7 +221,7 @@ def scrape_job_post(div):
     if "https://workinstartups.com/" in company_hyperlink:
         company_hyperlink = None
 
-    job_details = (job_title, company_name, job_type, date_posted, expiry_date, salary_range, job_hyperlink, company_hyperlink)
+    job_details = (job_title, company_name, job_location, job_type, date_posted, expiry_date, salary_range, job_hyperlink, company_hyperlink)
     return job_details
 
 
@@ -229,7 +230,7 @@ def scrape_page(soup, last_date, job_list):
     keep_searching = True
     for div in soup.find_all(name="div", attrs={"class": "job-listing mb-2"}):
         job_details = scrape_job_post(div)
-        job_date = datetime.strptime(job_details[3], '%d-%b-%Y')
+        job_date = datetime.strptime(job_details[4], '%d-%b-%Y')
         # Stops the search if the jobs' postings have a later date than last_date
         if job_date < last_date:
             keep_searching = False
