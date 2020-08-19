@@ -88,9 +88,9 @@ def remove_old_jobs(worksheet):
     # Create a list of all the jobs and remove the outdated jobs by comparing the deadline to the current date.
     all_jobs = get_jobs_in_table(worksheet)
     for job in all_jobs:
-        if datetime.strptime(job[5], "%d-%b-%Y") < datetime.today():
+        if datetime.strptime(job[4], "%d-%b-%Y") < datetime.today():
             all_jobs.remove(job)
-
+    
     # Delete all the jobs currently in the table and append the corrected job list.
     worksheet.delete_rows(2, worksheet.max_row)
     append_jobs_to_xl(all_jobs, worksheet)
@@ -129,7 +129,7 @@ def sort_job_list(worksheet):
 
 # Returns the posted date of the first job
 def get_first_job_date(worksheet):
-    first_job_date = worksheet["D2"].value
+    first_job_date = worksheet["E2"].value
     return first_job_date
 
 
