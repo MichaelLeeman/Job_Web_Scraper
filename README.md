@@ -1,6 +1,7 @@
 # Job_Web_Scraper
 A simple Python web-scraper and Excel program that extracts data from job websites and presents the data in an Excel worksheet.
 
+![](/images/worksheet_screenshot.png)
 ## Table Of Contents
 * [About](#about)
 * [Technologies](#technologies)
