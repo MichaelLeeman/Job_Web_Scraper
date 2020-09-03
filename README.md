@@ -36,7 +36,7 @@ $ source ./my_venv/bin/activate
 # Install dependencies
 $ pip3 install -r ./requirements.txt
 ```
-Next, you need to install [Chrome driver](https://sites.google.com/a/chromium.org/chromedriver/downloads) to allow Selenium to interface with Google Chrome. This application is built for Google Driver version 83.0 but other versions could be used by changing the header parameters in GET requests. The chrome driver needs to be installed in the app's directory.
+Next, you need to install [Chrome driver](https://sites.google.com/a/chromium.org/chromedriver/downloads) to allow Selenium to interface with Google Chrome. This application is built for Google Driver version 85.0 but other versions could be used by changing the header parameters in GET requests. The chrome driver needs to be installed in the app's directory.
 
 Finally, you can run the program inside the app directory. Please note that the program takes approximately 15 minutes to run with stable internet connection. While the app is running, an automated Google Chrome browser that's controlled by Selenium should pop up. Afterwards, you can open the Excel workbook by entering the following in the terminal:
 ```buildoutcfg
