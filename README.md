@@ -11,9 +11,10 @@ This project is a Python web-scraper and Excel program that extracts data from j
 ## About
 The purpose of this project is learn how to scrape data and create Excel worksheets using Python. 
 
-So far, this program scrapes data from the job website workinstartups.com by extracting keywords such as dates and salary range from the job description texts. The program then cleans the data and organises by date.
+So far, this program scrapes data from the job website workinstartups.com by extracting keywords such as dates and salary range from the job description texts. The program then cleans the data and organises it by date.
 
-Finally, the program creates a new Excel worksheet called _Job_Openings.xlsx_ in the project's directory. This Excel worksheet contains a table presenting all of the scraped job openings. If this program has ran before and _Job_Openings.xlsx_ already exists, then new jobs will be added to the Excel table and old jobs will be removed.
+Finally, the program creates a new Excel worksheet called _Job_Openings.xlsx_ in the project's directory (on the first time running). This Excel worksheet contains a table presenting all of the scraped job openings. If the program is ran again later on, then new jobs will be added to _Job_Openings.xlsx_, and any jobs that are past their deadline will be removed.
+
 
 ## Technologies
 Project was created with:
